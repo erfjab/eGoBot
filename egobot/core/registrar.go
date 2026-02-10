@@ -1,4 +1,4 @@
-package client
+package core
 
 // HandlerRegistrar is an interface for types that can register handlers
 type HandlerRegistrar interface {

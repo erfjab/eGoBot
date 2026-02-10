@@ -1,4 +1,4 @@
-package client
+package core
 
 // HandlerGroup represents a group of related handlers
 type HandlerGroup struct {

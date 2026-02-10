@@ -1,7 +1,7 @@
-package client
+package core
 
 import (
-	"egobot/egobot/client/methods"
+	"egobot/egobot/core/methods"
 	"egobot/egobot/models"
 	"log"
 	"time"
