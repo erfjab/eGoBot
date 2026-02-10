@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// این مثال نشان می‌دهد چگونه error handling پیشرفته را در یک ربات واقعی پیاده‌سازی کنیم
+// این مثال نشان می‌دهد چگونه error handling پیشرفته و ماژولار را در یک ربات واقعی پیاده‌سازی کنیم
 
 var (
 	// شمارنده برای تعداد rate limit errors
@@ -49,7 +49,6 @@ func main() {
 
 func setupErrorHandlers(bot *core.Bot) {
 	// 1. مدیریت Rate Limit Errors (429)
-	// این خطا زمانی رخ می‌دهد که تعداد درخواست‌ها بیش از حد مجاز باشد
 	bot.OnRateLimitError(func(b *core.Bot, u *models.Update, err error) error {
 		if teleErr, ok := err.(*core.TelegramError); ok {
 			rateLimitCount++
@@ -59,156 +58,190 @@ func setupErrorHandlers(bot *core.Bot) {
 				retryAfter = teleErr.Parameters.RetryAfter
 			}
 			
-			log.Printf("⏰ [Rate Limit #%d] Waiting %d seconds before retry", 
-				rateLimitCount, retryAfter)
-			
-			// صبر کردن قبل از retry
+			log.Printf("⏰ [Rate Limit #%d] Waiting %d seconds", rateLimitCount, retryAfter)
 			time.Sleep(time.Duration(retryAfter) * time.Second)
 			
-			// اطلاع به کاربر
 			if u != nil && u.Message != nil {
 				b.SendMessage(&models.SendMessageParams{
 					ChatID: u.Message.Chat.ID,
-					Text: fmt.Sprintf(
-						"⏳ ربات در حال حاضر بسیار شلوغ است.\n" +
-						"لطفاً %d ثانیه صبر کنید و دوباره تلاش کنید.",
-						retryAfter,
-					),
+					Text: fmt.Sprintf("⏳ ربات مشغول است. %d ثانیه صبر کنید.", retryAfter),
 				})
 			}
 		}
 		return nil
 	})
 
-	// 2. مدیریت Forbidden Errors (403)
-	// این خطا معمولاً زمانی رخ می‌دهد که کاربر ربات را بلاک کرده باشد
-	bot.OnForbiddenError(func(b *core.Bot, u *models.Update, err error) error {
-		if teleErr, ok := err.(*core.TelegramError); ok {
-			blockedUsersCount++
-			
-			if u != nil && u.Message != nil && u.Message.From != nil {
-				log.Printf("🚫 [User Blocked #%d] User %d (@%s) has blocked the bot or restricted access",
-					blockedUsersCount,
-					u.Message.From.ID,
-					u.Message.From.Username,
-				)
-				
-				// در اینجا می‌توانید کاربر را در دیتابیس به عنوان blocked علامت‌گذاری کنید
-				// db.MarkUserAsBlocked(u.Message.From.ID)
-			} else {
-				log.Printf("🚫 [Forbidden] %s", teleErr.Description)
-			}
+	// 2. مدیریت Bot Blocked - کاربر ربات را بلاک کرده
+	bot.OnBotBlocked(func(b *core.Bot, u *models.Update, err error) error {
+		blockedUsersCount++
+		if u != nil && u.Message != nil && u.Message.From != nil {
+			log.Printf("🚫 [Blocked #%d] User %d (@%s)", 
+				blockedUsersCount, u.Message.From.ID, u.Message.From.Username)
+			// db.MarkUserAsBlocked(u.Message.From.ID)
 		}
 		return nil
 	})
 
-	// 3. مدیریت Bad Request Errors (400)
-	// این خطا زمانی رخ می‌دهد که پارامترهای درخواست نامعتبر باشند
-	bot.OnBadRequest(func(b *core.Bot, u *models.Update, err error) error {
-		if teleErr, ok := err.(*core.TelegramError); ok {
-			log.Printf("❌ [Bad Request] %s", teleErr.Description)
-			
-			// بررسی خطاهای خاص
-			if u != nil && u.Message != nil {
-				var userMsg string
-				
-				// پیام‌های مختلف بر اساس نوع خطا
-				switch {
-				case containsString(teleErr.Description, "message text is empty"):
-					userMsg = "❌ متن پیام نمی‌تواند خالی باشد."
-					
-				case containsString(teleErr.Description, "message is too long"):
-					userMsg = "❌ پیام شما خیلی طولانی است. لطفاً کوتاه‌تر کنید."
-					
-				case containsString(teleErr.Description, "chat not found"):
-					userMsg = "❌ چت مورد نظر یافت نشد."
-					
-				case containsString(teleErr.Description, "message to delete not found"):
-					userMsg = "❌ پیام مورد نظر برای حذف یافت نشد."
-					
-				case containsString(teleErr.Description, "message can't be edited"):
-					userMsg = "❌ این پیام قابل ویرایش نیست."
-					
-				case containsString(teleErr.Description, "message to edit not found"):
-					userMsg = "❌ پیام مورد نظر برای ویرایش یافت نشد."
-					
-				default:
-					userMsg = "❌ درخواست نامعتبر است. لطفاً دوباره تلاش کنید."
-				}
-				
-				b.SendMessage(&models.SendMessageParams{
-					ChatID: u.Message.Chat.ID,
-					Text:   userMsg,
-				})
-			}
-		}
+	// 3. مدیریت Bot Kicked - ربات از گروه اخراج شده
+	bot.OnBotKicked(func(b *core.Bot, u *models.Update, err error) error {
+		log.Printf("👋 Bot was kicked from a chat")
+		// db.RemoveChatFromDatabase()
 		return nil
 	})
 
-	// 4. مدیریت Not Found Errors (404)
-	bot.OnError(core.ErrorCodeFilter(core.ErrorCodeNotFound), func(b *core.Bot, u *models.Update, err error) error {
-		if teleErr, ok := err.(*core.TelegramError); ok {
-			log.Printf("🔍 [Not Found] %s", teleErr.Description)
-			
-			if u != nil && u.Message != nil {
-				b.SendMessage(&models.SendMessageParams{
-					ChatID: u.Message.Chat.ID,
-					Text:   "❌ مورد درخواستی یافت نشد.",
-				})
-			}
-		}
-		return nil
-	})
-
-	// 5. مدیریت Conflict Errors (409)
-	// این خطا معمولاً زمانی رخ می‌دهد که دو instance از ربات با یک token اجرا شوند
-	bot.OnError(core.ConflictErrorFilter(), func(b *core.Bot, u *models.Update, err error) error {
-		if teleErr, ok := err.(*core.TelegramError); ok {
-			log.Printf("⚡ [Conflict] %s", teleErr.Description)
-			log.Println("⚠️ WARNING: Another instance of the bot might be running!")
-		}
-		return nil
-	})
-
-	// 6. مدیریت Server Errors (5xx)
-	// این خطاها مربوط به سرور تلگرام هستند
-	bot.OnError(core.ServerErrorFilter(), func(b *core.Bot, u *models.Update, err error) error {
-		if teleErr, ok := err.(*core.TelegramError); ok {
-			log.Printf("🔴 [Server Error %d] %s", teleErr.ErrorCode, teleErr.Description)
-			
-			if u != nil && u.Message != nil {
-				b.SendMessage(&models.SendMessageParams{
-					ChatID: u.Message.Chat.ID,
-					Text: "⚠️ سرور تلگرام در حال حاضر مشکل دارد.\n" +
-						  "لطفاً چند لحظه دیگر دوباره تلاش کنید.",
-				})
-			}
-		}
-		return nil
-	})
-
-	// 7. Fallback handler برای همه خطاهای دیگر
-	bot.SetFallbackErrorHandler(func(b *core.Bot, u *models.Update, err error) error {
-		// بررسی نوع خطا
-		if teleErr, ok := err.(*core.TelegramError); ok {
-			log.Printf("💥 [Unhandled Telegram Error %d] %s", teleErr.ErrorCode, teleErr.Description)
-		} else {
-			log.Printf("💥 [Unhandled Error] %v", err)
-		}
-		
-		// اطلاع به کاربر
+	// 4. مدیریت Message Not Found - پیام یافت نشد
+	bot.OnMessageNotFound(func(b *core.Bot, u *models.Update, err error) error {
+		log.Printf("🔍 Message not found")
 		if u != nil && u.Message != nil {
 			b.SendMessage(&models.SendMessageParams{
 				ChatID: u.Message.Chat.ID,
-				Text: "⚠️ خطایی رخ داده است.\n" +
-					  "لطفاً بعداً دوباره تلاش کنید.",
+				Text:   "❌ پیام مورد نظر یافت نشد.",
 			})
 		}
+		return nil
+	})
+
+	// 5. مدیریت Message Can't Be Edited - پیام قابل ویرایش نیست
+	bot.OnMessageCantBeEdited(func(b *core.Bot, u *models.Update, err error) error {
+		log.Printf("✏️ Message can't be edited")
+		if u != nil && u.Message != nil {
+			b.SendMessage(&models.SendMessageParams{
+				ChatID: u.Message.Chat.ID,
+				Text:   "❌ این پیام قابل ویرایش نیست.",
+			})
+		}
+		return nil
+	})
+
+	// 6. مدیریت Message Can't Be Deleted - پیام قابل حذف نیست
+	bot.OnMessageCantBeDeleted(func(b *core.Bot, u *models.Update, err error) error {
+		log.Printf("🗑️ Message can't be deleted")
+		if u != nil && u.Message != nil {
+			b.SendMessage(&models.SendMessageParams{
+				ChatID: u.Message.Chat.ID,
+				Text:   "❌ این پیام قابل حذف نیست.",
+			})
+		}
+		return nil
+	})
+
+	// 7. مدیریت Message Text Empty - متن پیام خالی است
+	bot.OnMessageTextEmpty(func(b *core.Bot, u *models.Update, err error) error {
+		log.Printf("📝 Empty message text")
+		if u != nil && u.Message != nil {
+			b.SendMessage(&models.SendMessageParams{
+				ChatID: u.Message.Chat.ID,
+				Text:   "❌ متن پیام نمی‌تواند خالی باشد.",
+			})
+		}
+		return nil
+	})
+
+	// 8. مدیریت Message Too Long - پیام خیلی طولانی است
+	bot.OnMessageTooLong(func(b *core.Bot, u *models.Update, err error) error {
+		log.Printf("📏 Message too long")
+		if u != nil && u.Message != nil {
+			b.SendMessage(&models.SendMessageParams{
+				ChatID: u.Message.Chat.ID,
+				Text:   "❌ پیام شما خیلی طولانی است. لطفاً کوتاه‌تر کنید.",
+			})
+		}
+		return nil
+	})
+
+	// 9. مدیریت Chat Not Found - چت یافت نشد
+	bot.OnChatNotFound(func(b *core.Bot, u *models.Update, err error) error {
+		log.Printf("💬 Chat not found")
+		if u != nil && u.Message != nil {
+			b.SendMessage(&models.SendMessageParams{
+				ChatID: u.Message.Chat.ID,
+				Text:   "❌ چت مورد نظر یافت نشد.",
+			})
+		}
+		return nil
+	})
+
+	// 10. مدیریت Invalid File ID - شناسه فایل نامعتبر است
+	bot.OnInvalidFileID(func(b *core.Bot, u *models.Update, err error) error {
+		log.Printf("📎 Invalid file_id")
+		if u != nil && u.Message != nil {
+			b.SendMessage(&models.SendMessageParams{
+				ChatID: u.Message.Chat.ID,
+				Text:   "❌ فایل مورد نظر نامعتبر یا منقضی شده است.",
+			})
+		}
+		return nil
+	})
+
+	// 11. مدیریت Button Data Invalid - داده دکمه نامعتبر است
+	bot.OnButtonDataInvalid(func(b *core.Bot, u *models.Update, err error) error {
+		log.Printf("🔘 Invalid button data")
+		if u != nil && u.CallbackQuery != nil {
+			b.AnswerCallbackQuery(u.CallbackQuery.ID, "❌ دکمه نامعتبر است", true)
+		}
+		return nil
+	})
+
+	// 12. مدیریت Bad Request (عمومی)
+	bot.OnBadRequest(func(b *core.Bot, u *models.Update, err error) error {
+		if teleErr, ok := err.(*core.TelegramError); ok {
+			log.Printf("❌ [Bad Request] %s", teleErr.Description)
+			if u != nil && u.Message != nil {
+				b.SendMessage(&models.SendMessageParams{
+					ChatID: u.Message.Chat.ID,
+					Text:   "❌ درخواست نامعتبر است.",
+				})
+			}
+		}
+		return nil
+	})
+
+	// 13. مدیریت Forbidden Errors (عمومی)
+	bot.OnForbiddenError(func(b *core.Bot, u *models.Update, err error) error {
+		if teleErr, ok := err.(*core.TelegramError); ok {
+			log.Printf("🚫 [Forbidden] %s", teleErr.Description)
+		}
+		return nil
+	})
+
+	// 14. مدیریت Conflict Errors
+	bot.OnError(core.ConflictErrorFilter(), func(b *core.Bot, u *models.Update, err error) error {
+		log.Printf("⚡ [Conflict] Another bot instance might be running!")
+		return nil
+	})
+
+	// 15. مدیریت Server Errors
+	bot.OnError(core.ServerErrorFilter(), func(b *core.Bot, u *models.Update, err error) error {
+		if teleErr, ok := err.(*core.TelegramError); ok {
+			log.Printf("🔴 [Server Error %d] %s", teleErr.ErrorCode, teleErr.Description)
+			if u != nil && u.Message != nil {
+				b.SendMessage(&models.SendMessageParams{
+					ChatID: u.Message.Chat.ID,
+					Text:   "⚠️ سرور تلگرام مشکل دارد. بعداً تلاش کنید.",
+				})
+			}
+		}
+		return nil
+	})
+
+	// 16. Fallback handler برای خطاهای مدیریت نشده
+	bot.SetFallbackErrorHandler(func(b *core.Bot, u *models.Update, err error) error {
+		if teleErr, ok := err.(*core.TelegramError); ok {
+			log.Printf("💥 [Unhandled] [%d] %s", teleErr.ErrorCode, teleErr.Description)
+		} else {
+			log.Printf("💥 [Unhandled] %v", err)
+		}
 		
+		if u != nil && u.Message != nil {
+			b.SendMessage(&models.SendMessageParams{
+				ChatID: u.Message.Chat.ID,
+				Text:   "⚠️ خطایی رخ داده است. بعداً تلاش کنید.",
+			})
+		}
 		return nil
 	})
 	
-	log.Println("✅ Error handlers configured successfully")
+	log.Println("✅ Error handlers configured (16 handlers)")
 }
 
 func setupCommandHandlers(bot *core.Bot) {
@@ -221,7 +254,8 @@ func setupCommandHandlers(bot *core.Bot) {
 				"دستورات موجود:\n" +
 				"/start - شروع\n" +
 				"/status - نمایش وضعیت\n" +
-				"/test_error - تست error handling",
+				"/test_empty - تست empty text\n" +
+				"/test_edit - تست edit error",
 		})
 		return err
 	})
@@ -230,7 +264,7 @@ func setupCommandHandlers(bot *core.Bot) {
 	bot.OnCommand("status", func(b *core.Bot, u *models.Update) error {
 		statusText := fmt.Sprintf(
 			"📊 *وضعیت ربات*\n\n"+
-				"▫️ Rate Limit Errors: `%d`\n"+
+				"▫️ Rate Limits: `%d`\n"+
 				"▫️ Blocked Users: `%d`\n",
 			rateLimitCount,
 			blockedUsersCount,
@@ -244,27 +278,25 @@ func setupCommandHandlers(bot *core.Bot) {
 		return err
 	})
 
-	// دستور /test_error - برای تست error handling
-	bot.OnCommand("test_error", func(b *core.Bot, u *models.Update) error {
-		// ارسال پیام خالی برای تست bad request error
+	// دستور /test_empty - تست empty text error
+	bot.OnCommand("test_empty", func(b *core.Bot, u *models.Update) error {
 		_, err := b.SendMessage(&models.SendMessageParams{
 			ChatID: u.Message.Chat.ID,
-			Text:   "", // متن خالی باعث bad request error می‌شود
+			Text:   "", // خالی - باعث error می‌شود
 		})
-		
-		// خطا به error handler منتقل می‌شود
-		return err
+		return err // خطا به error handler منتقل می‌شود
+	})
+
+	// دستور /test_edit - تست edit error
+	bot.OnCommand("test_edit", func(b *core.Bot, u *models.Update) error {
+		// تلاش برای ویرایش پیامی که وجود ندارد
+		_, err := b.EditMessageText(&models.EditMessageTextParams{
+			ChatID:    u.Message.Chat.ID,
+			MessageID: 99999, // پیام وجود ندارد
+			Text:      "Test",
+		})
+		return err // خطا به error handler منتقل می‌شود
 	})
 	
-	log.Println("✅ Command handlers configured successfully")
-}
-
-// تابع کمکی برای بررسی وجود substring
-func containsString(str, substr string) bool {
-	for i := 0; i <= len(str)-len(substr); i++ {
-		if str[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
+	log.Println("✅ Command handlers configured")
 }

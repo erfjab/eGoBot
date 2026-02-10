@@ -61,6 +61,95 @@ bot.OnTelegramError(func(b *core.Bot, u *models.Update, err error) error {
 
 ## Error Handlers اختصاصی
 
+eGoBot از error handlers ماژولار برای انواع مختلف خطاهای تلگرام پشتیبانی می‌کند.
+
+### خطاهای مربوط به پیام (Message Errors)
+
+```go
+// پیام یافت نشد
+bot.OnMessageNotFound(func(b *core.Bot, u *models.Update, err error) error {
+    log.Println("پیام یافت نشد")
+    return nil
+})
+
+// پیام قابل ویرایش نیست
+bot.OnMessageCantBeEdited(func(b *core.Bot, u *models.Update, err error) error {
+    log.Println("پیام قابل ویرایش نیست")
+    return nil
+})
+
+// پیام قابل حذف نیست
+bot.OnMessageCantBeDeleted(func(b *core.Bot, u *models.Update, err error) error {
+    log.Println("پیام قابل حذف نیست")
+    return nil
+})
+
+// متن پیام خالی است
+bot.OnMessageTextEmpty(func(b *core.Bot, u *models.Update, err error) error {
+    b.SendMessage(&models.SendMessageParams{
+        ChatID: u.Message.Chat.ID,
+        Text:   "❌ متن پیام نمی‌تواند خالی باشد",
+    })
+    return nil
+})
+
+// پیام خیلی طولانی است
+bot.OnMessageTooLong(func(b *core.Bot, u *models.Update, err error) error {
+    b.SendMessage(&models.SendMessageParams{
+        ChatID: u.Message.Chat.ID,
+        Text:   "❌ پیام شما خیلی طولانی است",
+    })
+    return nil
+})
+```
+
+### خطاهای مربوط به کاربر و چت (User/Chat Errors)
+
+```go
+// کاربر ربات را بلاک کرده
+bot.OnBotBlocked(func(b *core.Bot, u *models.Update, err error) error {
+    if u.Message != nil && u.Message.From != nil {
+        log.Printf("کاربر %d ربات را بلاک کرد", u.Message.From.ID)
+        // db.MarkUserAsBlocked(u.Message.From.ID)
+    }
+    return nil
+})
+
+// ربات از گروه اخراج شده
+bot.OnBotKicked(func(b *core.Bot, u *models.Update, err error) error {
+    log.Println("ربات از گروه اخراج شد")
+    // db.RemoveChatFromDatabase()
+    return nil
+})
+
+// چت یافت نشد
+bot.OnChatNotFound(func(b *core.Bot, u *models.Update, err error) error {
+    log.Println("چت یافت نشد")
+    return nil
+})
+```
+
+### خطاهای مربوط به رسانه (Media Errors)
+
+```go
+// شناسه فایل نامعتبر است
+bot.OnInvalidFileID(func(b *core.Bot, u *models.Update, err error) error {
+    b.SendMessage(&models.SendMessageParams{
+        ChatID: u.Message.Chat.ID,
+        Text:   "❌ فایل نامعتبر یا منقضی شده است",
+    })
+    return nil
+})
+
+// داده دکمه نامعتبر است
+bot.OnButtonDataInvalid(func(b *core.Bot, u *models.Update, err error) error {
+    if u.CallbackQuery != nil {
+        b.AnswerCallbackQuery(u.CallbackQuery.ID, "❌ دکمه نامعتبر", true)
+    }
+    return nil
+})
+```
+
 ### مدیریت Rate Limiting (429)
 
 ```go
@@ -76,40 +165,47 @@ bot.OnRateLimitError(func(b *core.Bot, u *models.Update, err error) error {
 })
 ```
 
-### مدیریت Forbidden Errors (403)
+### خطاهای عمومی
 
 ```go
-bot.OnForbiddenError(func(b *core.Bot, u *models.Update, err error) error {
-    if teleErr, ok := err.(*core.TelegramError); ok {
-        log.Printf("Bot was blocked or doesn't have permission: %s", teleErr.Description)
-        
-        // ذخیره در دیتابیس که کاربر ربات را بلاک کرده
-        if u.Message != nil {
-            // db.MarkUserAsBlocked(u.Message.From.ID)
-        }
-    }
-    return nil
-})
-```
-
-### مدیریت Bad Request Errors (400)
-
-```go
+// Bad Request (400)
 bot.OnBadRequest(func(b *core.Bot, u *models.Update, err error) error {
-    if teleErr, ok := err.(*core.TelegramError); ok {
-        log.Printf("Bad request: %s", teleErr.Description)
-        
-        // اطلاع به کاربر
-        if u.Message != nil {
-            b.SendMessage(&models.SendMessageParams{
-                ChatID: u.Message.Chat.ID,
-                Text:   "درخواست نامعتبر است. لطفاً دوباره تلاش کنید.",
-            })
-        }
-    }
+    log.Printf("Bad request: %v", err)
+    return nil
+})
+
+// Forbidden (403)
+bot.OnForbiddenError(func(b *core.Bot, u *models.Update, err error) error {
+    log.Printf("Forbidden: %v", err)
+    return nil
+})
+
+// Server Errors (5xx)
+bot.OnError(core.ServerErrorFilter(), func(b *core.Bot, u *models.Update, err error) error {
+    log.Printf("Server error: %v", err)
     return nil
 })
 ```
+
+## لیست کامل Error Handlers
+
+| متد | توضیح | نمونه استفاده |
+|-----|--------|---------------|
+| `OnMessageNotFound` | پیام یافت نشد | ویرایش/حذف پیام حذف شده |
+| `OnMessageCantBeEdited` | پیام قابل ویرایش نیست | ویرایش پیام قدیمی |
+| `OnMessageCantBeDeleted` | پیام قابل حذف نیست | حذف پیام محافظت شده |
+| `OnMessageTextEmpty` | متن پیام خالی است | ارسال پیام بدون متن |
+| `OnMessageTooLong` | پیام خیلی طولانی است | پیام بیش از 4096 کاراکتر |
+| `OnBotBlocked` | کاربر ربات را بلاک کرده | ارسال پیام به کاربر بلاک کننده |
+| `OnBotKicked` | ربات از گروه اخراج شده | ارسال پیام به گروهی که ربات عضو نیست |
+| `OnChatNotFound` | چت یافت نشد | ارسال به chat_id نامعتبر |
+| `OnInvalidFileID` | فایل نامعتبر است | استفاده از file_id منقضی شده |
+| `OnButtonDataInvalid` | داده دکمه نامعتبر است | callback_data بیش از 64 بایت |
+| `OnRateLimitError` | محدودیت نرخ | بیش از حد درخواست |
+| `OnBadRequest` | درخواست نامعتبر | پارامترهای اشتباه |
+| `OnForbiddenError` | دسترسی ممنوع | عدم دسترسی |
+| `OnTelegramError` | خطای تلگرام | همه خطاهای API |
+| `SetFallbackErrorHandler` | خطاهای مدیریت نشده | Fallback |
 
 ## Error Filters سفارشی
 

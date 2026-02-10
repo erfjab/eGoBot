@@ -64,6 +64,58 @@ func (b *Bot) OnForbiddenError(handler ErrorHandlerFunc) {
 	b.errorHandlers.AddHandler(ForbiddenErrorFilter(), handler)
 }
 
+// Message-specific error handlers
+
+// OnMessageTextEmpty registers a handler for empty message text errors
+func (b *Bot) OnMessageTextEmpty(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(MessageTextEmptyFilter(), handler)
+}
+
+// OnMessageTooLong registers a handler for message too long errors
+func (b *Bot) OnMessageTooLong(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(MessageTooLongFilter(), handler)
+}
+
+// OnChatNotFound registers a handler for chat not found errors
+func (b *Bot) OnChatNotFound(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(ChatNotFoundFilter(), handler)
+}
+
+// OnMessageNotFound registers a handler for message not found errors
+func (b *Bot) OnMessageNotFound(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(MessageNotFoundFilter(), handler)
+}
+
+// OnMessageCantBeEdited registers a handler for message can't be edited errors
+func (b *Bot) OnMessageCantBeEdited(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(MessageCantBeEditedFilter(), handler)
+}
+
+// OnMessageCantBeDeleted registers a handler for message can't be deleted errors
+func (b *Bot) OnMessageCantBeDeleted(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(MessageCantBeDeletedFilter(), handler)
+}
+
+// OnBotBlocked registers a handler for bot was blocked by user errors
+func (b *Bot) OnBotBlocked(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(BotBlockedFilter(), handler)
+}
+
+// OnBotKicked registers a handler for bot was kicked from chat errors
+func (b *Bot) OnBotKicked(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(BotKickedFilter(), handler)
+}
+
+// OnInvalidFileID registers a handler for invalid file_id errors
+func (b *Bot) OnInvalidFileID(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(InvalidFileIDFilter(), handler)
+}
+
+// OnButtonDataInvalid registers a handler for invalid button data errors
+func (b *Bot) OnButtonDataInvalid(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(ButtonDataInvalidFilter(), handler)
+}
+
 // SetFallbackErrorHandler sets a fallback error handler for all unhandled errors
 func (b *Bot) SetFallbackErrorHandler(handler ErrorHandlerFunc) {
 	b.errorHandlers.SetFallbackHandler(handler)

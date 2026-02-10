@@ -108,6 +108,100 @@ func (e *TelegramError) IsServerError() bool {
 	return e.ErrorCode >= 500 && e.ErrorCode < 600
 }
 
+// Message-specific error checks
+// IsMessageTextEmpty checks if error is about empty message text
+func (e *TelegramError) IsMessageTextEmpty() bool {
+	return contains(e.Description, "message text is empty")
+}
+
+// IsMessageTooLong checks if error is about message being too long
+func (e *TelegramError) IsMessageTooLong() bool {
+	return contains(e.Description, "message is too long")
+}
+
+// IsChatNotFound checks if error is about chat not being found
+func (e *TelegramError) IsChatNotFound() bool {
+	return contains(e.Description, "chat not found")
+}
+
+// IsMessageNotFound checks if error is about message not being found
+func (e *TelegramError) IsMessageNotFound() bool {
+	return contains(e.Description, "message to delete not found") ||
+		contains(e.Description, "message to edit not found") ||
+		contains(e.Description, "message not found")
+}
+
+// IsMessageCantBeEdited checks if error is about message that can't be edited
+func (e *TelegramError) IsMessageCantBeEdited() bool {
+	return contains(e.Description, "message can't be edited") ||
+		contains(e.Description, "message to be edited was not found")
+}
+
+// IsMessageCantBeDeleted checks if error is about message that can't be deleted
+func (e *TelegramError) IsMessageCantBeDeleted() bool {
+	return contains(e.Description, "message can't be deleted") ||
+		contains(e.Description, "message to delete not found")
+}
+
+// IsBotWasBlocked checks if the bot was blocked by user
+func (e *TelegramError) IsBotWasBlocked() bool {
+	return contains(e.Description, "bot was blocked by the user") ||
+		contains(e.Description, "user is deactivated") ||
+		(e.ErrorCode == ErrorCodeForbidden && contains(e.Description, "blocked"))
+}
+
+// IsBotKicked checks if the bot was kicked from chat
+func (e *TelegramError) IsBotKicked() bool {
+	return contains(e.Description, "bot was kicked") ||
+		contains(e.Description, "bot is not a member")
+}
+
+// IsInvalidFileID checks if the file_id is invalid
+func (e *TelegramError) IsInvalidFileID() bool {
+	return contains(e.Description, "wrong file identifier") ||
+		contains(e.Description, "file_id")
+}
+
+// IsButtonDataInvalid checks if callback data is invalid
+func (e *TelegramError) IsButtonDataInvalid() bool {
+	return contains(e.Description, "BUTTON_DATA_INVALID") ||
+		contains(e.Description, "data is too long")
+}
+
+// Helper function to check if string contains substring (case-insensitive)
+func contains(s, substr string) bool {
+	if len(substr) == 0 {
+		return true
+	}
+	if len(s) < len(substr) {
+		return false
+	}
+	
+	// Simple case-insensitive search
+	for i := 0; i <= len(s)-len(substr); i++ {
+		match := true
+		for j := 0; j < len(substr); j++ {
+			c1 := s[i+j]
+			c2 := substr[j]
+			// Convert to lowercase for comparison
+			if c1 >= 'A' && c1 <= 'Z' {
+				c1 += 32
+			}
+			if c2 >= 'A' && c2 <= 'Z' {
+				c2 += 32
+			}
+			if c1 != c2 {
+				match = false
+				break
+			}
+		}
+		if match {
+			return true
+		}
+	}
+	return false
+}
+
 // ErrorFilter filters errors based on a condition
 type ErrorFilter func(error) bool
 
@@ -221,5 +315,107 @@ func ServerErrorFilter() ErrorFilter {
 func AllErrorsFilter() ErrorFilter {
 	return func(err error) bool {
 		return true
+	}
+}
+
+// Message-specific error filters
+
+// MessageTextEmptyFilter creates a filter for empty message text errors
+func MessageTextEmptyFilter() ErrorFilter {
+	return func(err error) bool {
+		if teleErr, ok := err.(*TelegramError); ok {
+			return teleErr.IsMessageTextEmpty()
+		}
+		return false
+	}
+}
+
+// MessageTooLongFilter creates a filter for message too long errors
+func MessageTooLongFilter() ErrorFilter {
+	return func(err error) bool {
+		if teleErr, ok := err.(*TelegramError); ok {
+			return teleErr.IsMessageTooLong()
+		}
+		return false
+	}
+}
+
+// ChatNotFoundFilter creates a filter for chat not found errors
+func ChatNotFoundFilter() ErrorFilter {
+	return func(err error) bool {
+		if teleErr, ok := err.(*TelegramError); ok {
+			return teleErr.IsChatNotFound()
+		}
+		return false
+	}
+}
+
+// MessageNotFoundFilter creates a filter for message not found errors
+func MessageNotFoundFilter() ErrorFilter {
+	return func(err error) bool {
+		if teleErr, ok := err.(*TelegramError); ok {
+			return teleErr.IsMessageNotFound()
+		}
+		return false
+	}
+}
+
+// MessageCantBeEditedFilter creates a filter for message can't be edited errors
+func MessageCantBeEditedFilter() ErrorFilter {
+	return func(err error) bool {
+		if teleErr, ok := err.(*TelegramError); ok {
+			return teleErr.IsMessageCantBeEdited()
+		}
+		return false
+	}
+}
+
+// MessageCantBeDeletedFilter creates a filter for message can't be deleted errors
+func MessageCantBeDeletedFilter() ErrorFilter {
+	return func(err error) bool {
+		if teleErr, ok := err.(*TelegramError); ok {
+			return teleErr.IsMessageCantBeDeleted()
+		}
+		return false
+	}
+}
+
+// BotBlockedFilter creates a filter for bot was blocked by user errors
+func BotBlockedFilter() ErrorFilter {
+	return func(err error) bool {
+		if teleErr, ok := err.(*TelegramError); ok {
+			return teleErr.IsBotWasBlocked()
+		}
+		return false
+	}
+}
+
+// BotKickedFilter creates a filter for bot was kicked from chat errors
+func BotKickedFilter() ErrorFilter {
+	return func(err error) bool {
+		if teleErr, ok := err.(*TelegramError); ok {
+			return teleErr.IsBotKicked()
+		}
+		return false
+	}
+}
+
+// InvalidFileIDFilter creates a filter for invalid file_id errors
+func InvalidFileIDFilter() ErrorFilter {
+	return func(err error) bool {
+		if teleErr, ok := err.(*TelegramError); ok {
+			return teleErr.IsInvalidFileID()
+		}
+		return false
+	}
+}
+
+// ButtonDataInvalidFilter creates a filter for invalid button data errors
+func ButtonDataInvalidFilter() ErrorFilter {
+	return func(err error) bool {
+		if teleErr, ok := err.(*TelegramError); ok {
+			return teleErr.IsButtonDataInvalid()
+		}
+		return false
 	}
 }
