@@ -3,17 +3,180 @@ package client
 import (
 	"egobot/egobot/client/methods"
 	"egobot/egobot/models"
+	"log"
+	"time"
 )
 
 type Bot struct {
 	Token     string
 	requester *methods.Requester
+	handlers  *Handlers
 }
 
 func NewBot(token string) *Bot {
 	return &Bot{
 		Token:     token,
 		requester: methods.NewRequester(token),
+		handlers:  NewHandlers(),
+	}
+}
+
+// AddHandler adds a custom handler with a filter
+func (b *Bot) AddHandler(filter FilterFunc, handler HandlerFunc) {
+	b.handlers.AddHandler(filter, handler)
+}
+
+// OnCommand registers a handler for a specific command
+func (b *Bot) OnCommand(command string, handler HandlerFunc) {
+	b.AddHandler(CommandFilter(command), handler)
+}
+
+// OnMessage registers a handler for all messages
+func (b *Bot) OnMessage(handler HandlerFunc) {
+	b.AddHandler(MessageFilter(), handler)
+}
+
+// OnText registers a handler for text messages (non-command)
+func (b *Bot) OnText(handler HandlerFunc) {
+	b.AddHandler(TextFilter(), handler)
+}
+
+// OnCallbackQuery registers a handler for all callback queries
+func (b *Bot) OnCallbackQuery(handler HandlerFunc) {
+	b.AddHandler(CallbackQueryFilter(), handler)
+}
+
+// OnCallbackData registers a handler for callback queries with specific data
+func (b *Bot) OnCallbackData(data string, handler HandlerFunc) {
+	b.AddHandler(CallbackDataFilter(data), handler)
+}
+
+// OnPhoto registers a handler for photo messages
+func (b *Bot) OnPhoto(handler HandlerFunc) {
+	b.AddHandler(PhotoFilter(), handler)
+}
+
+// OnDocument registers a handler for document messages
+func (b *Bot) OnDocument(handler HandlerFunc) {
+	b.AddHandler(DocumentFilter(), handler)
+}
+
+// OnVideo registers a handler for video messages
+func (b *Bot) OnVideo(handler HandlerFunc) {
+	b.AddHandler(VideoFilter(), handler)
+}
+
+// OnAudio registers a handler for audio messages
+func (b *Bot) OnAudio(handler HandlerFunc) {
+	b.AddHandler(AudioFilter(), handler)
+}
+
+// OnVoice registers a handler for voice messages
+func (b *Bot) OnVoice(handler HandlerFunc) {
+	b.AddHandler(VoiceFilter(), handler)
+}
+
+// OnSticker registers a handler for sticker messages
+func (b *Bot) OnSticker(handler HandlerFunc) {
+	b.AddHandler(StickerFilter(), handler)
+}
+
+// OnLocation registers a handler for location messages
+func (b *Bot) OnLocation(handler HandlerFunc) {
+	b.AddHandler(LocationFilter(), handler)
+}
+
+// OnContact registers a handler for contact messages
+func (b *Bot) OnContact(handler HandlerFunc) {
+	b.AddHandler(ContactFilter(), handler)
+}
+
+// OnEditedMessage registers a handler for edited messages
+func (b *Bot) OnEditedMessage(handler HandlerFunc) {
+	b.AddHandler(EditedMessageFilter(), handler)
+}
+
+// OnInlineQuery registers a handler for inline queries
+func (b *Bot) OnInlineQuery(handler HandlerFunc) {
+	b.AddHandler(InlineQueryFilter(), handler)
+}
+
+// OnChannelPost registers a handler for channel posts
+func (b *Bot) OnChannelPost(handler HandlerFunc) {
+	b.AddHandler(ChannelPostFilter(), handler)
+}
+
+// PollingOptions represents configuration options for polling
+type PollingOptions struct {
+	Timeout        int           // Timeout in seconds for long polling (default: 30)
+	Limit          int           // Maximum number of updates to retrieve (default: 100)
+	AllowedUpdates []string      // List of update types to receive (default: all)
+	Async          bool          // Process updates asynchronously in goroutines (default: true)
+	RetryDelay     int           // Delay in seconds before retrying after error (default: 3)
+	OnStart        func()        // Callback when polling starts
+	OnError        func(error)   // Callback when error occurs
+}
+
+// StartPolling starts polling for updates
+// Pass nil to use default settings, or pass *PollingOptions to customize
+func (b *Bot) StartPolling(options *PollingOptions) {
+	// Use defaults if options is nil
+	if options == nil {
+		options = &PollingOptions{
+			Timeout:    30,
+			Limit:      100,
+			Async:      true,
+			RetryDelay: 3,
+		}
+	} else {
+		// Fill in defaults for zero values
+		if options.Timeout == 0 {
+			options.Timeout = 30
+		}
+		if options.Limit == 0 {
+			options.Limit = 100
+		}
+		if options.RetryDelay == 0 {
+			options.RetryDelay = 3
+		}
+	}
+	
+	offset := int64(0)
+	
+	if options.OnStart != nil {
+		options.OnStart()
+	}
+	
+	log.Println("Bot started polling...")
+	
+	for {
+		updates, err := b.GetUpdates(&models.GetUpdatesParams{
+			Offset:         offset,
+			Limit:          options.Limit,
+			Timeout:        options.Timeout,
+			AllowedUpdates: options.AllowedUpdates,
+		})
+		
+		if err != nil {
+			log.Printf("Error getting updates: %v", err)
+			if options.OnError != nil {
+				options.OnError(err)
+			}
+			time.Sleep(time.Duration(options.RetryDelay) * time.Second)
+			continue
+		}
+		
+		for _, update := range updates {
+			offset = update.UpdateID + 1
+			
+			if options.Async {
+				// Process update in a goroutine to handle multiple updates concurrently
+				go b.handlers.Process(b, &update)
+			} else {
+				// Process update synchronously
+				b.handlers.Process(b, &update)
+			}
+		}
 	}
 }
 
