@@ -25,8 +25,8 @@ func NewBot(token string) *Bot {
 }
 
 // AddHandler adds a custom handler with a filter
-func (b *Bot) AddHandler(filter FilterFunc, handler HandlerFunc) {
-	b.handlers.AddHandler(filter, handler)
+func (b *Bot) AddHandler(filter FilterFunc, handler HandlerFunc, middlewares ...MiddlewareFunc) {
+	b.handlers.AddHandler(filter, handler, middlewares...)
 }
 
 // RegisterGroup registers all handlers from a handler group

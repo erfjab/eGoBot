@@ -2,7 +2,7 @@ package core
 
 // HandlerRegistrar is an interface for types that can register handlers
 type HandlerRegistrar interface {
-	AddHandler(filter FilterFunc, handler HandlerFunc)
+	AddHandler(filter FilterFunc, handler HandlerFunc, middlewares ...MiddlewareFunc)
 }
 
 // RegisterCommands provides convenience methods for registering handlers
