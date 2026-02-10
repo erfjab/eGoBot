@@ -11,14 +11,17 @@ type Bot struct {
 	Token     string
 	requester *methods.Requester
 	handlers  *Handlers
+	*RegisterCommands
 }
 
 func NewBot(token string) *Bot {
-	return &Bot{
+	bot := &Bot{
 		Token:     token,
 		requester: methods.NewRequester(token),
 		handlers:  NewHandlers(),
 	}
+	bot.RegisterCommands = NewRegisterCommands(bot)
+	return bot
 }
 
 // AddHandler adds a custom handler with a filter
@@ -26,84 +29,11 @@ func (b *Bot) AddHandler(filter FilterFunc, handler HandlerFunc) {
 	b.handlers.AddHandler(filter, handler)
 }
 
-// OnCommand registers a handler for a specific command
-func (b *Bot) OnCommand(command string, handler HandlerFunc) {
-	b.AddHandler(CommandFilter(command), handler)
-}
-
-// OnMessage registers a handler for all messages
-func (b *Bot) OnMessage(handler HandlerFunc) {
-	b.AddHandler(MessageFilter(), handler)
-}
-
-// OnText registers a handler for text messages (non-command)
-func (b *Bot) OnText(handler HandlerFunc) {
-	b.AddHandler(TextFilter(), handler)
-}
-
-// OnCallbackQuery registers a handler for all callback queries
-func (b *Bot) OnCallbackQuery(handler HandlerFunc) {
-	b.AddHandler(CallbackQueryFilter(), handler)
-}
-
-// OnCallbackData registers a handler for callback queries with specific data
-func (b *Bot) OnCallbackData(data string, handler HandlerFunc) {
-	b.AddHandler(CallbackDataFilter(data), handler)
-}
-
-// OnPhoto registers a handler for photo messages
-func (b *Bot) OnPhoto(handler HandlerFunc) {
-	b.AddHandler(PhotoFilter(), handler)
-}
-
-// OnDocument registers a handler for document messages
-func (b *Bot) OnDocument(handler HandlerFunc) {
-	b.AddHandler(DocumentFilter(), handler)
-}
-
-// OnVideo registers a handler for video messages
-func (b *Bot) OnVideo(handler HandlerFunc) {
-	b.AddHandler(VideoFilter(), handler)
-}
-
-// OnAudio registers a handler for audio messages
-func (b *Bot) OnAudio(handler HandlerFunc) {
-	b.AddHandler(AudioFilter(), handler)
-}
-
-// OnVoice registers a handler for voice messages
-func (b *Bot) OnVoice(handler HandlerFunc) {
-	b.AddHandler(VoiceFilter(), handler)
-}
-
-// OnSticker registers a handler for sticker messages
-func (b *Bot) OnSticker(handler HandlerFunc) {
-	b.AddHandler(StickerFilter(), handler)
-}
-
-// OnLocation registers a handler for location messages
-func (b *Bot) OnLocation(handler HandlerFunc) {
-	b.AddHandler(LocationFilter(), handler)
-}
-
-// OnContact registers a handler for contact messages
-func (b *Bot) OnContact(handler HandlerFunc) {
-	b.AddHandler(ContactFilter(), handler)
-}
-
-// OnEditedMessage registers a handler for edited messages
-func (b *Bot) OnEditedMessage(handler HandlerFunc) {
-	b.AddHandler(EditedMessageFilter(), handler)
-}
-
-// OnInlineQuery registers a handler for inline queries
-func (b *Bot) OnInlineQuery(handler HandlerFunc) {
-	b.AddHandler(InlineQueryFilter(), handler)
-}
-
-// OnChannelPost registers a handler for channel posts
-func (b *Bot) OnChannelPost(handler HandlerFunc) {
-	b.AddHandler(ChannelPostFilter(), handler)
+// RegisterGroup registers all handlers from a handler group
+func (b *Bot) RegisterGroup(group *HandlerGroup) {
+	for _, handler := range group.Handlers() {
+		b.handlers.handlers = append(b.handlers.handlers, handler)
+	}
 }
 
 // PollingOptions represents configuration options for polling
