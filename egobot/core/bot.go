@@ -1,19 +1,112 @@
-package client
+package core
 
 import (
-	"egobot/egobot/client/methods"
+	"egobot/egobot/core/methods"
 	"egobot/egobot/models"
+	"log"
+	"time"
 )
 
 type Bot struct {
 	Token     string
 	requester *methods.Requester
+	handlers  *Handlers
+	*RegisterCommands
 }
 
 func NewBot(token string) *Bot {
-	return &Bot{
+	bot := &Bot{
 		Token:     token,
 		requester: methods.NewRequester(token),
+		handlers:  NewHandlers(),
+	}
+	bot.RegisterCommands = NewRegisterCommands(bot)
+	return bot
+}
+
+// AddHandler adds a custom handler with a filter
+func (b *Bot) AddHandler(filter FilterFunc, handler HandlerFunc) {
+	b.handlers.AddHandler(filter, handler)
+}
+
+// RegisterGroup registers all handlers from a handler group
+func (b *Bot) RegisterGroup(group *HandlerGroup) {
+	for _, handler := range group.Handlers() {
+		b.handlers.handlers = append(b.handlers.handlers, handler)
+	}
+}
+
+// PollingOptions represents configuration options for polling
+type PollingOptions struct {
+	Timeout        int           // Timeout in seconds for long polling (default: 30)
+	Limit          int           // Maximum number of updates to retrieve (default: 100)
+	AllowedUpdates []string      // List of update types to receive (default: all)
+	Async          bool          // Process updates asynchronously in goroutines (default: true)
+	RetryDelay     int           // Delay in seconds before retrying after error (default: 3)
+	OnStart        func()        // Callback when polling starts
+	OnError        func(error)   // Callback when error occurs
+}
+
+// StartPolling starts polling for updates
+// Pass nil to use default settings, or pass *PollingOptions to customize
+func (b *Bot) StartPolling(options *PollingOptions) {
+	// Use defaults if options is nil
+	if options == nil {
+		options = &PollingOptions{
+			Timeout:    30,
+			Limit:      100,
+			Async:      true,
+			RetryDelay: 3,
+		}
+	} else {
+		// Fill in defaults for zero values
+		if options.Timeout == 0 {
+			options.Timeout = 30
+		}
+		if options.Limit == 0 {
+			options.Limit = 100
+		}
+		if options.RetryDelay == 0 {
+			options.RetryDelay = 3
+		}
+	}
+	
+	offset := int64(0)
+	
+	if options.OnStart != nil {
+		options.OnStart()
+	}
+	
+	log.Println("Bot started polling...")
+	
+	for {
+		updates, err := b.GetUpdates(&models.GetUpdatesParams{
+			Offset:         offset,
+			Limit:          options.Limit,
+			Timeout:        options.Timeout,
+			AllowedUpdates: options.AllowedUpdates,
+		})
+		
+		if err != nil {
+			log.Printf("Error getting updates: %v", err)
+			if options.OnError != nil {
+				options.OnError(err)
+			}
+			time.Sleep(time.Duration(options.RetryDelay) * time.Second)
+			continue
+		}
+		
+		for _, update := range updates {
+			offset = update.UpdateID + 1
+			
+			if options.Async {
+				// Process update in a goroutine to handle multiple updates concurrently
+				go b.handlers.Process(b, &update)
+			} else {
+				// Process update synchronously
+				b.handlers.Process(b, &update)
+			}
+		}
 	}
 }
 
