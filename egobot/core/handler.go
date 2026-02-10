@@ -11,8 +11,9 @@ type HandlerFunc func(*Bot, *models.Update) error
 
 // Handler represents a handler with its filter and handler function
 type Handler struct {
-	Filter  FilterFunc
-	Handler HandlerFunc
+	Filter      FilterFunc
+	Handler     HandlerFunc
+	Middlewares []MiddlewareFunc
 }
 
 // FilterFunc represents a function that filters updates
@@ -31,10 +32,11 @@ func NewHandlers() *Handlers {
 }
 
 // AddHandler adds a new handler
-func (h *Handlers) AddHandler(filter FilterFunc, handler HandlerFunc) {
+func (h *Handlers) AddHandler(filter FilterFunc, handler HandlerFunc, middlewares ...MiddlewareFunc) {
 	h.handlers = append(h.handlers, Handler{
-		Filter:  filter,
-		Handler: handler,
+		Filter:      filter,
+		Handler:     handler,
+		Middlewares: middlewares,
 	})
 }
 
@@ -42,8 +44,17 @@ func (h *Handlers) AddHandler(filter FilterFunc, handler HandlerFunc) {
 func (h *Handlers) Process(bot *Bot, update *models.Update) {
 	for _, handler := range h.handlers {
 		if handler.Filter(update) {
-			if err := handler.Handler(bot, update); err != nil {
-				log.Printf("Error handling update: %v", err)
+			// Execute with middleware chain
+			if len(handler.Middlewares) > 0 {
+				chain := NewMiddlewareChain(handler.Handler, handler.Middlewares...)
+				if err := chain.Execute(bot, update); err != nil {
+					log.Printf("Error handling update: %v", err)
+				}
+			} else {
+				// No middlewares, execute handler directly
+				if err := handler.Handler(bot, update); err != nil {
+					log.Printf("Error handling update: %v", err)
+				}
 			}
 			return // Stop after first matching handler
 		}

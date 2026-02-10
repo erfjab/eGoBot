@@ -2,9 +2,10 @@ package core
 
 // HandlerGroup represents a group of related handlers
 type HandlerGroup struct {
-	name     string
-	handlers []Handler
-	filter   FilterFunc
+	name        string
+	handlers    []Handler
+	filter      FilterFunc
+	middlewares []MiddlewareFunc
 	*RegisterCommands
 }
 
@@ -24,17 +25,29 @@ func (g *HandlerGroup) WithFilter(filter FilterFunc) *HandlerGroup {
 	return g
 }
 
+// UseMiddleware adds middleware(s) to this group
+// All handlers in this group will use these middlewares
+func (g *HandlerGroup) UseMiddleware(middlewares ...MiddlewareFunc) *HandlerGroup {
+	g.middlewares = append(g.middlewares, middlewares...)
+	return g
+}
+
 // AddHandler adds a custom handler with a filter to the group
-func (g *HandlerGroup) AddHandler(filter FilterFunc, handler HandlerFunc) {
+func (g *HandlerGroup) AddHandler(filter FilterFunc, handler HandlerFunc, middlewares ...MiddlewareFunc) {
 	// Apply group filter if exists
 	finalFilter := filter
 	if g.filter != nil {
 		finalFilter = AndFilter(g.filter, filter)
 	}
 	
+	// Combine group middlewares with handler-specific middlewares
+	allMiddlewares := append([]MiddlewareFunc{}, g.middlewares...)
+	allMiddlewares = append(allMiddlewares, middlewares...)
+	
 	g.handlers = append(g.handlers, Handler{
-		Filter:  finalFilter,
-		Handler: handler,
+		Filter:      finalFilter,
+		Handler:     handler,
+		Middlewares: allMiddlewares,
 	})
 }
 
