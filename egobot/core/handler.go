@@ -44,16 +44,21 @@ func (h *Handlers) AddHandler(filter FilterFunc, handler HandlerFunc, middleware
 func (h *Handlers) Process(bot *Bot, update *models.Update) {
 	for _, handler := range h.handlers {
 		if handler.Filter(update) {
+			var err error
 			// Execute with middleware chain
 			if len(handler.Middlewares) > 0 {
 				chain := NewMiddlewareChain(handler.Handler, handler.Middlewares...)
-				if err := chain.Execute(bot, update); err != nil {
-					log.Printf("Error handling update: %v", err)
-				}
+				err = chain.Execute(bot, update)
 			} else {
 				// No middlewares, execute handler directly
-				if err := handler.Handler(bot, update); err != nil {
-					log.Printf("Error handling update: %v", err)
+				err = handler.Handler(bot, update)
+			}
+			
+			// If there was an error, pass it to error handlers
+			if err != nil {
+				log.Printf("Error handling update: %v", err)
+				if handlerErr := bot.errorHandlers.Process(bot, update, err); handlerErr != nil {
+					log.Printf("Error handler failed: %v", handlerErr)
 				}
 			}
 			return // Stop after first matching handler

@@ -8,17 +8,19 @@ import (
 )
 
 type Bot struct {
-	Token     string
-	requester *methods.Requester
-	handlers  *Handlers
+	Token         string
+	requester     *methods.Requester
+	handlers      *Handlers
+	errorHandlers *ErrorHandlers
 	*RegisterCommands
 }
 
 func NewBot(token string) *Bot {
 	bot := &Bot{
-		Token:     token,
-		requester: methods.NewRequester(token),
-		handlers:  NewHandlers(),
+		Token:         token,
+		requester:     methods.NewRequester(token),
+		handlers:      NewHandlers(),
+		errorHandlers: NewErrorHandlers(),
 	}
 	bot.RegisterCommands = NewRegisterCommands(bot)
 	return bot
@@ -34,6 +36,89 @@ func (b *Bot) RegisterGroup(group *HandlerGroup) {
 	for _, handler := range group.Handlers() {
 		b.handlers.handlers = append(b.handlers.handlers, handler)
 	}
+}
+
+// OnError registers an error handler with optional filter
+// Pass nil as filter to handle all errors
+func (b *Bot) OnError(filter ErrorFilter, handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(filter, handler)
+}
+
+// OnTelegramError registers a handler for Telegram API errors
+func (b *Bot) OnTelegramError(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(TelegramErrorFilter(), handler)
+}
+
+// OnRateLimitError registers a handler for rate limit errors (429)
+func (b *Bot) OnRateLimitError(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(RateLimitErrorFilter(), handler)
+}
+
+// OnBadRequest registers a handler for bad request errors (400)
+func (b *Bot) OnBadRequest(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(BadRequestErrorFilter(), handler)
+}
+
+// OnForbiddenError registers a handler for forbidden errors (403)
+func (b *Bot) OnForbiddenError(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(ForbiddenErrorFilter(), handler)
+}
+
+// Message-specific error handlers
+
+// OnMessageTextEmpty registers a handler for empty message text errors
+func (b *Bot) OnMessageTextEmpty(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(MessageTextEmptyFilter(), handler)
+}
+
+// OnMessageTooLong registers a handler for message too long errors
+func (b *Bot) OnMessageTooLong(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(MessageTooLongFilter(), handler)
+}
+
+// OnChatNotFound registers a handler for chat not found errors
+func (b *Bot) OnChatNotFound(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(ChatNotFoundFilter(), handler)
+}
+
+// OnMessageNotFound registers a handler for message not found errors
+func (b *Bot) OnMessageNotFound(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(MessageNotFoundFilter(), handler)
+}
+
+// OnMessageCantBeEdited registers a handler for message can't be edited errors
+func (b *Bot) OnMessageCantBeEdited(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(MessageCantBeEditedFilter(), handler)
+}
+
+// OnMessageCantBeDeleted registers a handler for message can't be deleted errors
+func (b *Bot) OnMessageCantBeDeleted(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(MessageCantBeDeletedFilter(), handler)
+}
+
+// OnBotBlocked registers a handler for bot was blocked by user errors
+func (b *Bot) OnBotBlocked(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(BotBlockedFilter(), handler)
+}
+
+// OnBotKicked registers a handler for bot was kicked from chat errors
+func (b *Bot) OnBotKicked(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(BotKickedFilter(), handler)
+}
+
+// OnInvalidFileID registers a handler for invalid file_id errors
+func (b *Bot) OnInvalidFileID(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(InvalidFileIDFilter(), handler)
+}
+
+// OnButtonDataInvalid registers a handler for invalid button data errors
+func (b *Bot) OnButtonDataInvalid(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(ButtonDataInvalidFilter(), handler)
+}
+
+// SetFallbackErrorHandler sets a fallback error handler for all unhandled errors
+func (b *Bot) SetFallbackErrorHandler(handler ErrorHandlerFunc) {
+	b.errorHandlers.SetFallbackHandler(handler)
 }
 
 // PollingOptions represents configuration options for polling
