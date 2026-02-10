@@ -8,17 +8,19 @@ import (
 )
 
 type Bot struct {
-	Token     string
-	requester *methods.Requester
-	handlers  *Handlers
+	Token         string
+	requester     *methods.Requester
+	handlers      *Handlers
+	errorHandlers *ErrorHandlers
 	*RegisterCommands
 }
 
 func NewBot(token string) *Bot {
 	bot := &Bot{
-		Token:     token,
-		requester: methods.NewRequester(token),
-		handlers:  NewHandlers(),
+		Token:         token,
+		requester:     methods.NewRequester(token),
+		handlers:      NewHandlers(),
+		errorHandlers: NewErrorHandlers(),
 	}
 	bot.RegisterCommands = NewRegisterCommands(bot)
 	return bot
@@ -34,6 +36,37 @@ func (b *Bot) RegisterGroup(group *HandlerGroup) {
 	for _, handler := range group.Handlers() {
 		b.handlers.handlers = append(b.handlers.handlers, handler)
 	}
+}
+
+// OnError registers an error handler with optional filter
+// Pass nil as filter to handle all errors
+func (b *Bot) OnError(filter ErrorFilter, handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(filter, handler)
+}
+
+// OnTelegramError registers a handler for Telegram API errors
+func (b *Bot) OnTelegramError(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(TelegramErrorFilter(), handler)
+}
+
+// OnRateLimitError registers a handler for rate limit errors (429)
+func (b *Bot) OnRateLimitError(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(RateLimitErrorFilter(), handler)
+}
+
+// OnBadRequest registers a handler for bad request errors (400)
+func (b *Bot) OnBadRequest(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(BadRequestErrorFilter(), handler)
+}
+
+// OnForbiddenError registers a handler for forbidden errors (403)
+func (b *Bot) OnForbiddenError(handler ErrorHandlerFunc) {
+	b.errorHandlers.AddHandler(ForbiddenErrorFilter(), handler)
+}
+
+// SetFallbackErrorHandler sets a fallback error handler for all unhandled errors
+func (b *Bot) SetFallbackErrorHandler(handler ErrorHandlerFunc) {
+	b.errorHandlers.SetFallbackHandler(handler)
 }
 
 // PollingOptions represents configuration options for polling

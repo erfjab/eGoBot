@@ -5,6 +5,16 @@ type HandlerRegistrar interface {
 	AddHandler(filter FilterFunc, handler HandlerFunc, middlewares ...MiddlewareFunc)
 }
 
+// ErrorHandlerRegistrar is an interface for types that can register error handlers
+type ErrorHandlerRegistrar interface {
+	OnError(filter ErrorFilter, handler ErrorHandlerFunc)
+	OnTelegramError(handler ErrorHandlerFunc)
+	OnRateLimitError(handler ErrorHandlerFunc)
+	OnBadRequest(handler ErrorHandlerFunc)
+	OnForbiddenError(handler ErrorHandlerFunc)
+	SetFallbackErrorHandler(handler ErrorHandlerFunc)
+}
+
 // RegisterCommands provides convenience methods for registering handlers
 type RegisterCommands struct {
 	registrar HandlerRegistrar
