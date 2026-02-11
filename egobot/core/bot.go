@@ -3,6 +3,8 @@ package core
 import (
 	"egobot/egobot/core/methods"
 	"egobot/egobot/models"
+	"egobot/egobot/state"
+	"egobot/egobot/state/storage"
 	"log"
 	"time"
 )
@@ -12,6 +14,7 @@ type Bot struct {
 	requester     *methods.Requester
 	handlers      *Handlers
 	errorHandlers *ErrorHandlers
+	StateManager  *state.Manager
 	*RegisterCommands
 }
 
@@ -21,14 +24,38 @@ func NewBot(token string) *Bot {
 		requester:     methods.NewRequester(token),
 		handlers:      NewHandlers(),
 		errorHandlers: NewErrorHandlers(),
+		StateManager:  state.NewManager(storage.NewMemoryStorage()),
 	}
 	bot.RegisterCommands = NewRegisterCommands(bot)
 	return bot
 }
 
-// AddHandler adds a custom handler with a filter
-func (b *Bot) AddHandler(filter FilterFunc, handler HandlerFunc, middlewares ...MiddlewareFunc) {
-	b.handlers.AddHandler(filter, handler, middlewares...)
+// SetStorage sets a custom storage backend for state management
+func (b *Bot) SetStorage(store storage.BaseStorage) {
+	b.StateManager = state.NewManager(store)
+}
+
+// AddHandler adds a custom handler with a filter and optional state filter
+func (b *Bot) AddHandler(filter FilterFunc, handler HandlerFunc, opts ...interface{}) {
+	var stateFilter *state.Filter
+	var middlewares []MiddlewareFunc
+	
+	for _, opt := range opts {
+		switch v := opt.(type) {
+		case *state.Filter:
+			stateFilter = v
+		case MiddlewareFunc:
+			middlewares = append(middlewares, v)
+		case []MiddlewareFunc:
+			middlewares = append(middlewares, v...)
+		}
+	}
+	
+	if stateFilter != nil {
+		b.handlers.AddHandlerWithState(filter, stateFilter, handler, middlewares...)
+	} else {
+		b.handlers.AddHandler(filter, handler, middlewares...)
+	}
 }
 
 // RegisterGroup registers all handlers from a handler group
