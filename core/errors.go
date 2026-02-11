@@ -1,8 +1,9 @@
 package core
 
 import (
-	"egobot/egobot/models"
 	"fmt"
+
+	"github.com/erfjab/egobot/models"
 )
 
 // ErrorHandlerFunc represents a function that handles errors

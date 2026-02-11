@@ -1,8 +1,9 @@
 package methods
 
 import (
-	"egobot/egobot/models"
 	"fmt"
+
+	"github.com/erfjab/egobot/models"
 )
 
 // https://core.telegram.org/bots/api#getchat

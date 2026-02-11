@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"egobot/egobot/state/storage"
+	"github.com/erfjab/egobot/state/storage"
 )
 
 // Manager handles state management for users

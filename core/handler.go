@@ -2,10 +2,11 @@ package core
 
 import (
 	"context"
-	"egobot/egobot/models"
-	"egobot/egobot/state"
 	"log"
 	"strings"
+
+	"github.com/erfjab/egobot/models"
+	"github.com/erfjab/egobot/state"
 )
 
 // HandlerFunc represents a function that handles an update
