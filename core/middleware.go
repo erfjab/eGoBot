@@ -5,10 +5,10 @@ import (
 )
 
 // MiddlewareFunc represents a middleware function
-// It receives the bot, update, and a next function
+// It receives the bot, update, context, and a next function
 // Call next() to continue to the next middleware or handler
 // Return without calling next() to stop the chain
-type MiddlewareFunc func(*Bot, *models.Update, NextFunc)
+type MiddlewareFunc func(*Bot, *models.Update, *Context, NextFunc)
 
 // NextFunc is the function to call the next middleware or handler in the chain
 type NextFunc func()
@@ -17,6 +17,7 @@ type NextFunc func()
 type MiddlewareChain struct {
 	middlewares []MiddlewareFunc
 	handler     HandlerFunc
+	context     *Context
 }
 
 // NewMiddlewareChain creates a new middleware chain
@@ -24,6 +25,7 @@ func NewMiddlewareChain(handler HandlerFunc, middlewares ...MiddlewareFunc) *Mid
 	return &MiddlewareChain{
 		middlewares: middlewares,
 		handler:     handler,
+		context:     NewContext(),
 	}
 }
 
@@ -31,7 +33,7 @@ func NewMiddlewareChain(handler HandlerFunc, middlewares ...MiddlewareFunc) *Mid
 func (mc *MiddlewareChain) Execute(bot *Bot, update *models.Update) error {
 	if len(mc.middlewares) == 0 {
 		// No middlewares, just execute the handler
-		return mc.handler(bot, update)
+		return mc.handler(bot, update, mc.context)
 	}
 
 	var currentIndex int
@@ -44,10 +46,10 @@ func (mc *MiddlewareChain) Execute(bot *Bot, update *models.Update) error {
 			// Execute current middleware
 			middleware := mc.middlewares[currentIndex]
 			currentIndex++
-			middleware(bot, update, next)
+			middleware(bot, update, mc.context, next)
 		} else {
 			// All middlewares passed, execute the handler
-			err = mc.handler(bot, update)
+			err = mc.handler(bot, update, mc.context)
 		}
 	}
 
