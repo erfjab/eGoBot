@@ -10,7 +10,7 @@ import (
 )
 
 // HandlerFunc represents a function that handles an update
-type HandlerFunc func(*Bot, *models.Update) error
+type HandlerFunc func(*Bot, *models.Update, *Context) error
 
 // Handler represents a handler with its filter and handler function
 type Handler struct {
@@ -95,7 +95,8 @@ func (h *Handlers) Process(bot *Bot, update *models.Update) {
 				err = chain.Execute(bot, update)
 			} else {
 				// No middlewares, execute handler directly
-				err = handler.Handler(bot, update)
+				ctx := NewContext()
+				err = handler.Handler(bot, update, ctx)
 			}
 			
 			// If there was an error, pass it to error handlers
