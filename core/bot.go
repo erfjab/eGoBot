@@ -1,12 +1,13 @@
 package core
 
 import (
-	"egobot/core/methods"
-	"egobot/models"
-	"egobot/state"
-	"egobot/state/storage"
 	"log"
 	"time"
+
+	"github.com/erfjab/egobot/core/methods"
+	"github.com/erfjab/egobot/models"
+	"github.com/erfjab/egobot/state"
+	"github.com/erfjab/egobot/state/storage"
 )
 
 type Bot struct {

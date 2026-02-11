@@ -1,11 +1,12 @@
 package tools
 
 import (
-	"egobot/models"
 	"html"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/erfjab/egobot/models"
 )
 
 type parseMode int
