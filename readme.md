@@ -6,5 +6,5 @@ Ultimately, the goal is to build, maintain, and share source code.
 Wish you all the best.
 
 ```bash
-go get github.com/yourusername/github.com/erfjab/egobot
+go get github.com/erfjab/egobot
 ```
