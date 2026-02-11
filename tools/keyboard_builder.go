@@ -1,6 +1,6 @@
 package tools
 
-import "egobot/egobot/models"
+import "egobot/models"
 
 // InlineKeyboardBuilder helps build inline keyboards easily
 type InlineKeyboardBuilder struct {

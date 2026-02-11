@@ -1,7 +1,7 @@
 package tools
 
 import (
-	"egobot/egobot/models"
+	"egobot/models"
 	"html"
 	"sort"
 	"strconv"

@@ -1,10 +1,10 @@
 package core
 
 import (
-	"egobot/egobot/core/methods"
-	"egobot/egobot/models"
-	"egobot/egobot/state"
-	"egobot/egobot/state/storage"
+	"egobot/core/methods"
+	"egobot/models"
+	"egobot/state"
+	"egobot/state/storage"
 	"log"
 	"time"
 )

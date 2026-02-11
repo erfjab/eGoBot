@@ -2,8 +2,8 @@ package core
 
 import (
 	"context"
-	"egobot/egobot/models"
-	"egobot/egobot/state"
+	"egobot/models"
+	"egobot/state"
 	"log"
 	"strings"
 )

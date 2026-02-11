@@ -1,7 +1,7 @@
 package core
 
 import (
-	"egobot/egobot/models"
+	"egobot/models"
 )
 
 // MiddlewareFunc represents a middleware function

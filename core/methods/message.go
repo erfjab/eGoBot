@@ -1,7 +1,7 @@
 package methods
 
 import (
-	"egobot/egobot/models"
+	"egobot/models"
 	"errors"
 	"fmt"
 )
