@@ -33,7 +33,18 @@ func (g *HandlerGroup) UseMiddleware(middlewares ...MiddlewareFunc) *HandlerGrou
 }
 
 // AddHandler adds a custom handler with a filter to the group
-func (g *HandlerGroup) AddHandler(filter FilterFunc, handler HandlerFunc, middlewares ...MiddlewareFunc) {
+func (g *HandlerGroup) AddHandler(filter FilterFunc, handler HandlerFunc, opts ...interface{}) {
+	// Extract middlewares from opts
+	var middlewares []MiddlewareFunc
+	for _, opt := range opts {
+		switch v := opt.(type) {
+		case MiddlewareFunc:
+			middlewares = append(middlewares, v)
+		case []MiddlewareFunc:
+			middlewares = append(middlewares, v...)
+		}
+	}
+	
 	// Apply group filter if exists
 	finalFilter := filter
 	if g.filter != nil {

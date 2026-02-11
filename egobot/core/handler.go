@@ -1,7 +1,9 @@
 package core
 
 import (
+	"context"
 	"egobot/egobot/models"
+	"egobot/egobot/state"
 	"log"
 	"strings"
 )
@@ -14,6 +16,7 @@ type Handler struct {
 	Filter      FilterFunc
 	Handler     HandlerFunc
 	Middlewares []MiddlewareFunc
+	StateFilter *state.Filter // Optional state filter
 }
 
 // FilterFunc represents a function that filters updates
@@ -37,13 +40,53 @@ func (h *Handlers) AddHandler(filter FilterFunc, handler HandlerFunc, middleware
 		Filter:      filter,
 		Handler:     handler,
 		Middlewares: middlewares,
+		StateFilter: nil, // No state filter by default
+	})
+}
+
+// AddHandlerWithState adds a new handler with state filter
+func (h *Handlers) AddHandlerWithState(filter FilterFunc, stateFilter *state.Filter, handler HandlerFunc, middlewares ...MiddlewareFunc) {
+	h.handlers = append(h.handlers, Handler{
+		Filter:      filter,
+		Handler:     handler,
+		Middlewares: middlewares,
+		StateFilter: stateFilter,
 	})
 }
 
 // Process processes an update through all handlers
 func (h *Handlers) Process(bot *Bot, update *models.Update) {
+	// Get user ID for state checking
+	var userID interface{}
+	if update.Message != nil && update.Message.From != nil {
+		userID = update.Message.From.ID
+	} else if update.CallbackQuery != nil {
+		userID = update.CallbackQuery.From.ID
+	} else if update.EditedMessage != nil && update.EditedMessage.From != nil {
+		userID = update.EditedMessage.From.ID
+	} else if update.InlineQuery != nil {
+		userID = update.InlineQuery.From.ID
+	}
+
 	for _, handler := range h.handlers {
 		if handler.Filter(update) {
+			// Check state filter if present
+			if handler.StateFilter != nil && userID != nil {
+				ctx := context.Background()
+				userManager := bot.StateManager.ForUser(userID)
+				currentState, err := userManager.GetState(ctx)
+				if err != nil {
+					log.Printf("Error getting user state: %v", err)
+					continue
+				}
+				
+				// Check if state matches
+				if !handler.StateFilter.Check(currentState) {
+					// State doesn't match, skip this handler
+					continue
+				}
+			}
+
 			var err error
 			// Execute with middleware chain
 			if len(handler.Middlewares) > 0 {

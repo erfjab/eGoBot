@@ -2,7 +2,7 @@ package core
 
 // HandlerRegistrar is an interface for types that can register handlers
 type HandlerRegistrar interface {
-	AddHandler(filter FilterFunc, handler HandlerFunc, middlewares ...MiddlewareFunc)
+	AddHandler(filter FilterFunc, handler HandlerFunc, opts ...interface{})
 }
 
 // ErrorHandlerRegistrar is an interface for types that can register error handlers
