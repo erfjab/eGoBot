@@ -29,6 +29,15 @@ func NewMiddlewareChain(handler HandlerFunc, middlewares ...MiddlewareFunc) *Mid
 	}
 }
 
+// NewMiddlewareChainWithContext creates a new middleware chain with a pre-populated context
+func NewMiddlewareChainWithContext(handler HandlerFunc, ctx *Context, middlewares ...MiddlewareFunc) *MiddlewareChain {
+	return &MiddlewareChain{
+		middlewares: middlewares,
+		handler:     handler,
+		context:     ctx,
+	}
+}
+
 // Execute executes the middleware chain
 func (mc *MiddlewareChain) Execute(bot *Bot, update *models.Update) error {
 	if len(mc.middlewares) == 0 {
