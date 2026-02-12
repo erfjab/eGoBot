@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/erfjab/egobot/models"
 	"github.com/erfjab/egobot/state"
 )
 
@@ -47,6 +48,9 @@ func (g *HandlerGroup) AddHandler(filter FilterFunc, handler HandlerFunc, opts .
 			stateFilter = v
 		case MiddlewareFunc:
 			middlewares = append(middlewares, v)
+		case func(*Bot, *models.Update, *Context, NextFunc):
+			// Handle function literals/pointers that match MiddlewareFunc signature
+			middlewares = append(middlewares, MiddlewareFunc(v))
 		case []MiddlewareFunc:
 			middlewares = append(middlewares, v...)
 		}
