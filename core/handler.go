@@ -7,6 +7,7 @@ import (
 
 	"github.com/erfjab/egobot/models"
 	"github.com/erfjab/egobot/state"
+	"github.com/erfjab/egobot/state/storage"
 )
 
 // HandlerFunc represents a function that handles an update
@@ -71,17 +72,23 @@ func (h *Handlers) Process(bot *Bot, update *models.Update) {
 
 	for _, handler := range h.handlers {
 		if handler.Filter(update) {
-			// Check state filter if present
+			// Check state filter if present and load user context
+			var userContext *storage.UserContext
 			if handler.StateFilter != nil && userID != nil {
 				ctx := context.Background()
 				userManager := bot.StateManager.ForUser(userID)
-				currentState, err := userManager.GetState(ctx)
+				var err error
+				userContext, err = userManager.GetContext(ctx)
 				if err != nil {
-					log.Printf("Error getting user state: %v", err)
+					log.Printf("Error getting user context: %v", err)
 					continue
 				}
 				
 				// Check if state matches
+				var currentState *state.State
+				if userContext != nil && userContext.State != "" {
+					currentState = state.NewState(userContext.State)
+				}
 				if !handler.StateFilter.Check(currentState) {
 					// State doesn't match, skip this handler
 					continue
@@ -89,14 +96,23 @@ func (h *Handlers) Process(bot *Bot, update *models.Update) {
 			}
 
 			var err error
+			// Create context and inject user state/data if available
+			handlerCtx := NewContext()
+			if userContext != nil {
+				handlerCtx.Set("state", userContext.State)
+				handlerCtx.Set("data", userContext.Data)
+				if userContext.State != "" {
+					handlerCtx.Set("state_obj", state.NewState(userContext.State))
+				}
+			}
+			
 			// Execute with middleware chain
 			if len(handler.Middlewares) > 0 {
-				chain := NewMiddlewareChain(handler.Handler, handler.Middlewares...)
+				chain := NewMiddlewareChainWithContext(handler.Handler, handlerCtx, handler.Middlewares...)
 				err = chain.Execute(bot, update)
 			} else {
 				// No middlewares, execute handler directly
-				ctx := NewContext()
-				err = handler.Handler(bot, update, ctx)
+				err = handler.Handler(bot, update, handlerCtx)
 			}
 			
 			// If there was an error, pass it to error handlers

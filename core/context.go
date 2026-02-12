@@ -105,3 +105,19 @@ func (c *Context) Keys() []string {
 	}
 	return keys
 }
+
+// GetStateData returns the user's state data as a map
+// Returns nil if no data exists
+func (c *Context) GetStateData() map[string]interface{} {
+	val := c.Get("data")
+	if data, ok := val.(map[string]interface{}); ok {
+		return data
+	}
+	return nil
+}
+
+// GetStateName returns the user's current state name
+// Returns empty string if no state exists
+func (c *Context) GetStateName() string {
+	return c.GetString("state")
+}
