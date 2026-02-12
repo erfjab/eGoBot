@@ -1,5 +1,9 @@
 package core
 
+import (
+	"github.com/erfjab/egobot/state"
+)
+
 // HandlerGroup represents a group of related handlers
 type HandlerGroup struct {
 	name        string
@@ -34,10 +38,13 @@ func (g *HandlerGroup) UseMiddleware(middlewares ...MiddlewareFunc) *HandlerGrou
 
 // AddHandler adds a custom handler with a filter to the group
 func (g *HandlerGroup) AddHandler(filter FilterFunc, handler HandlerFunc, opts ...interface{}) {
-	// Extract middlewares from opts
+	var stateFilter *state.Filter
 	var middlewares []MiddlewareFunc
+	
 	for _, opt := range opts {
 		switch v := opt.(type) {
+		case *state.Filter:
+			stateFilter = v
 		case MiddlewareFunc:
 			middlewares = append(middlewares, v)
 		case []MiddlewareFunc:
@@ -59,6 +66,7 @@ func (g *HandlerGroup) AddHandler(filter FilterFunc, handler HandlerFunc, opts .
 		Filter:      finalFilter,
 		Handler:     handler,
 		Middlewares: allMiddlewares,
+		StateFilter: stateFilter,
 	})
 }
 
