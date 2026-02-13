@@ -86,27 +86,49 @@ func (r *RegisterCommands) OnCallbackStruct(model interface{}, handler HandlerFu
 		return
 	}
 
-	r.registrar.AddHandler(data.Filter(), func(b *Bot, update *models.Update, ctx *Context) error {
+	filter := func(update *models.Update) bool {
 		if update == nil || update.CallbackQuery == nil {
-			return nil
+			return false
+		}
+		if _, ok := data.Parse(update.CallbackQuery.Data); !ok {
+			return false
 		}
 
 		payload, err := newCallbackStructValue(model)
 		if err != nil {
-			return nil
+			return false
 		}
-
 		if !data.ParseToStruct(update.CallbackQuery.Data, payload) {
-			return nil
+			return false
+		}
+		return callbackStructPatternMatches(payload, model)
+	}
+
+	injectCallbackMiddleware := MiddlewareFunc(func(_ *Bot, update *models.Update, ctx *Context, next NextFunc) {
+		if update == nil || update.CallbackQuery == nil {
+			return
 		}
 
+		payload, err := newCallbackStructValue(model)
+		if err != nil {
+			return
+		}
+		if !data.ParseToStruct(update.CallbackQuery.Data, payload) {
+			return
+		}
 		if !callbackStructPatternMatches(payload, model) {
-			return nil
+			return
 		}
 
 		ctx.setCallbackData(payload)
-		return handler(b, update, ctx)
-	}, opts...)
+		next()
+	})
+
+	finalOpts := make([]interface{}, 0, len(opts)+1)
+	finalOpts = append(finalOpts, injectCallbackMiddleware)
+	finalOpts = append(finalOpts, opts...)
+
+	r.registrar.AddHandler(filter, handler, finalOpts...)
 }
 
 // OnPhoto registers a handler for photo messages
