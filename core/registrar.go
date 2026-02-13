@@ -1,5 +1,9 @@
 package core
 
+import (
+	"github.com/erfjab/egobot/models"
+)
+
 // HandlerRegistrar is an interface for types that can register handlers
 type HandlerRegistrar interface {
 	AddHandler(filter FilterFunc, handler HandlerFunc, opts ...interface{})
@@ -53,6 +57,56 @@ func (r *RegisterCommands) OnCallbackData(data string, handler HandlerFunc, opts
 // OnCallbackDataPrefix registers a handler for callback queries with data starting with prefix
 func (r *RegisterCommands) OnCallbackDataPrefix(prefix string, handler HandlerFunc, opts ...interface{}) {
 	r.registrar.AddHandler(CallbackDataPrefixFilter(prefix), handler, opts...)
+}
+
+// OnCallbackDataModel registers a handler for callback queries matching a CallbackData definition
+func (r *RegisterCommands) OnCallbackDataModel(data *CallbackData, handler HandlerFunc, opts ...interface{}) {
+	if data == nil {
+		return
+	}
+	r.registrar.AddHandler(data.Filter(), handler, opts...)
+}
+
+// OnCallbackStruct registers a handler for callback queries based on a struct model.
+// The model must embed tools.CallbackData.
+//
+// Non-zero exported fields in model act as a filter pattern. This allows using
+// the same callback struct type across multiple handlers.
+//
+// Parsed payload is stored in context and can be retrieved with:
+//   - ctx.LoadCallbackData(&payload)
+//   - GetCallbackStruct[T](ctx)
+func (r *RegisterCommands) OnCallbackStruct(model interface{}, handler HandlerFunc, opts ...interface{}) {
+	if model == nil {
+		return
+	}
+
+	data, err := NewCallbackDataFromStruct(model)
+	if err != nil {
+		return
+	}
+
+	r.registrar.AddHandler(data.Filter(), func(b *Bot, update *models.Update, ctx *Context) error {
+		if update == nil || update.CallbackQuery == nil {
+			return nil
+		}
+
+		payload, err := newCallbackStructValue(model)
+		if err != nil {
+			return nil
+		}
+
+		if !data.ParseToStruct(update.CallbackQuery.Data, payload) {
+			return nil
+		}
+
+		if !callbackStructPatternMatches(payload, model) {
+			return nil
+		}
+
+		ctx.setCallbackData(payload)
+		return handler(b, update, ctx)
+	}, opts...)
 }
 
 // OnPhoto registers a handler for photo messages
