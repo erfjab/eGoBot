@@ -121,3 +121,33 @@ func (c *Context) GetStateData() map[string]interface{} {
 func (c *Context) GetStateName() string {
 	return c.GetString("state")
 }
+
+func (c *Context) setCallbackData(value interface{}) {
+	c.Set(callbackDataContextKey, value)
+}
+
+// GetCallbackData returns parsed callback payload stored by OnCallbackStruct.
+func (c *Context) GetCallbackData() interface{} {
+	return c.Get(callbackDataContextKey)
+}
+
+// LoadCallbackData loads parsed callback payload from context into out.
+// out must be a non-nil pointer to struct.
+func (c *Context) LoadCallbackData(out interface{}) bool {
+	if c == nil {
+		return false
+	}
+	return loadCallbackData(out, c.GetCallbackData())
+}
+
+// MatchCallbackData checks whether parsed callback payload in context matches
+// non-zero exported fields of expect.
+//
+// expect must be a struct (or pointer to struct) of the same type as payload.
+// Zero-value fields in expect are ignored.
+func (c *Context) MatchCallbackData(expect interface{}) bool {
+	if c == nil {
+		return false
+	}
+	return callbackStructPatternMatches(c.GetCallbackData(), expect)
+}
