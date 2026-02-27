@@ -69,6 +69,32 @@ func SwitchInlineCurrentButton(text, query string) models.InlineKeyboardButton {
 	}
 }
 
+// SwitchInlineChosenChatButton creates a button that switches to inline query in selected chats
+func SwitchInlineChosenChatButton(text string, chosenChat *models.SwitchInlineQueryChosenChat) models.InlineKeyboardButton {
+	return models.InlineKeyboardButton{
+		Text:                        text,
+		SwitchInlineQueryChosenChat: chosenChat,
+	}
+}
+
+// CopyTextButton creates a button that copies text to user's clipboard
+func CopyTextButton(text, copyText string) models.InlineKeyboardButton {
+	return models.InlineKeyboardButton{
+		Text: text,
+		CopyText: &models.CopyTextButton{
+			Text: copyText,
+		},
+	}
+}
+
+// CallbackGameButton creates a callback game button
+func CallbackGameButton(text string) models.InlineKeyboardButton {
+	return models.InlineKeyboardButton{
+		Text:         text,
+		CallbackGame: &models.CallbackGame{},
+	}
+}
+
 // PayButton creates a payment button
 func PayButton(text string) models.InlineKeyboardButton {
 	return models.InlineKeyboardButton{

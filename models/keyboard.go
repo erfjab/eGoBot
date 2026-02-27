@@ -14,10 +14,26 @@ type InlineKeyboardButton struct {
 	LoginURL                     *LoginURL     `json:"login_url,omitempty"`
 	SwitchInlineQuery            string        `json:"switch_inline_query,omitempty"`
 	SwitchInlineQueryCurrentChat string        `json:"switch_inline_query_current_chat,omitempty"`
+	SwitchInlineQueryChosenChat  *SwitchInlineQueryChosenChat `json:"switch_inline_query_chosen_chat,omitempty"`
+	CopyText                     *CopyTextButton `json:"copy_text,omitempty"`
 	CallbackGame                 *CallbackGame `json:"callback_game,omitempty"`
 	Pay                          bool          `json:"pay,omitempty"`
 	IconCustomEmojiID            string        `json:"icon_custom_emoji_id,omitempty"`
 	Style                        string        `json:"style,omitempty"`
+}
+
+// https://core.telegram.org/bots/api#switchinlinequerychosenchat
+type SwitchInlineQueryChosenChat struct {
+	Query             string `json:"query,omitempty"`
+	AllowUserChats    bool   `json:"allow_user_chats,omitempty"`
+	AllowBotChats     bool   `json:"allow_bot_chats,omitempty"`
+	AllowGroupChats   bool   `json:"allow_group_chats,omitempty"`
+	AllowChannelChats bool   `json:"allow_channel_chats,omitempty"`
+}
+
+// https://core.telegram.org/bots/api#copytextbutton
+type CopyTextButton struct {
+	Text string `json:"text"`
 }
 
 // https://core.telegram.org/bots/api#replykeyboardmarkup
