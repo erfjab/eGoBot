@@ -1,5 +1,32 @@
 package models
 
+import "encoding/json"
+
+// InputFile represents a file to send to Telegram.
+// Exactly one of FileID, URL, or Data should be set:
+//   - FileID: re-use an already-uploaded Telegram file by its file_id.
+//   - URL:    let Telegram fetch the file from a public HTTP/HTTPS URL.
+//   - Data:   upload raw bytes via multipart/form-data (Name is used as the filename).
+//
+// https://core.telegram.org/bots/api#inputfile
+type InputFile struct {
+	FileID string
+	URL    string
+	Data   []byte
+	Name   string
+}
+
+// MarshalJSON serialises InputFile as a plain JSON string (file_id or URL).
+// When Data is set the caller must use a multipart/form-data request instead;
+// this method is only a fallback for the JSON path and returns an empty string
+// in that case so that misconfiguration is obvious.
+func (f InputFile) MarshalJSON() ([]byte, error) {
+	if f.FileID != "" {
+		return json.Marshal(f.FileID)
+	}
+	return json.Marshal(f.URL)
+}
+
 // https://core.telegram.org/bots/api#photosize
 type PhotoSize struct {
 	FileID       string `json:"file_id"`
