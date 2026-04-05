@@ -2,17 +2,21 @@ package methods
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/erfjab/egobot/models"
+	"golang.org/x/net/proxy"
 )
 
 const (
@@ -35,6 +39,51 @@ func NewRequester(token string) *Requester {
 			Timeout: defaultTimeout,
 		},
 	}
+}
+
+// SetProxy configures the HTTP client to route all requests through the given proxy URL.
+// Supported schemes: socks5, socks5h, http, https.
+// Example: "socks5://user:pass@127.0.0.1:1080" or "http://proxy.example.com:8080"
+func (r *Requester) SetProxy(proxyURL string) error {
+	parsed, err := url.Parse(proxyURL)
+	if err != nil {
+		return fmt.Errorf("invalid proxy URL: %w", err)
+	}
+
+	var transport *http.Transport
+
+	switch parsed.Scheme {
+	case "socks5", "socks5h":
+		var auth *proxy.Auth
+		if parsed.User != nil {
+			pass, _ := parsed.User.Password()
+			auth = &proxy.Auth{
+				User:     parsed.User.Username(),
+				Password: pass,
+			}
+		}
+		dialer, err := proxy.SOCKS5("tcp", parsed.Host, auth, proxy.Direct)
+		if err != nil {
+			return fmt.Errorf("failed to create SOCKS5 dialer: %w", err)
+		}
+		transport = &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+				return dialer.Dial(network, addr)
+			},
+		}
+	case "http", "https":
+		transport = &http.Transport{
+			Proxy: http.ProxyURL(parsed),
+		}
+	default:
+		return fmt.Errorf("unsupported proxy scheme: %s", parsed.Scheme)
+	}
+
+	r.HTTPClient = &http.Client{
+		Timeout:   defaultTimeout,
+		Transport: transport,
+	}
+	return nil
 }
 
 // Request sends a Telegram Bot API call. It automatically switches to

@@ -36,6 +36,13 @@ func (b *Bot) SetStorage(store storage.BaseStorage) {
 	b.StateManager = state.NewManager(store)
 }
 
+// SetProxy configures the bot to send all API requests through the given proxy URL.
+// Supported schemes: socks5, socks5h, http, https.
+// Example: bot.SetProxy("socks5://127.0.0.1:1080")
+func (b *Bot) SetProxy(proxyURL string) error {
+	return b.requester.SetProxy(proxyURL)
+}
+
 // AddHandler adds a custom handler with a filter and optional state filter
 func (b *Bot) AddHandler(filter FilterFunc, handler HandlerFunc, opts ...interface{}) {
 	var stateFilter *state.Filter
