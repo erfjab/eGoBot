@@ -230,6 +230,18 @@ func (b *Bot) StartPolling(options *PollingOptions) {
 	}
 }
 
+// ProcessUpdate processes a single update directly.
+// Use this when running in webhook mode — your HTTP handler receives the update
+// from Telegram and passes it here for the bot to handle.
+// Set async to true to process in a goroutine (non-blocking).
+func (b *Bot) ProcessUpdate(update *models.Update, async bool) {
+	if async {
+		go b.handlers.Process(b, update)
+	} else {
+		b.handlers.Process(b, update)
+	}
+}
+
 func (b *Bot) GetMe() (*models.User, error) {
 	return b.requester.GetMe()
 }
