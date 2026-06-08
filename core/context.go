@@ -1,40 +1,59 @@
 package core
 
 import (
+	"context"
 	"sync"
+	"time"
 )
 
-// Context provides a way to store and retrieve data during request processing
-// It allows middlewares to pass data to handlers
+// Context provides a way to store and retrieve data during request processing.
+// It implements the standard context.Context interface so it can be passed
+// directly to database drivers, HTTP clients, and any function that accepts
+// context.Context — just like fiber.Ctx does.
+//
+// It wraps a parent context.Context (defaults to context.Background()) and
+// adds a thread-safe data store for passing values between middlewares and
+// handlers.
 type Context struct {
+	context.Context
 	data map[string]interface{}
 	mu   sync.RWMutex
 }
 
-// NewContext creates a new Context instance
+// NewContext creates a new Context instance with context.Background() as parent.
 func NewContext() *Context {
+	return NewContextWithParent(context.Background())
+}
+
+// NewContextWithParent creates a new Context with the given parent context.
+// Use this when you have an existing context.Context (e.g. from an HTTP request,
+// fiber.Ctx, or a database transaction) that you want to propagate cancellation
+// and deadlines through.
+func NewContextWithParent(parent context.Context) *Context {
 	return &Context{
-		data: make(map[string]interface{}),
+		Context: parent,
+		data:    make(map[string]interface{}),
 	}
 }
 
-// Set stores a value in the context
+// Set stores a value in the context's local data store.
+// This is separate from the parent context's Value() chain and is thread-safe.
 func (c *Context) Set(key string, value interface{}) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.data[key] = value
 }
 
-// Get retrieves a value from the context
-// Returns nil if the key doesn't exist
+// Get retrieves a value from the context's local data store.
+// Returns nil if the key doesn't exist.
 func (c *Context) Get(key string) interface{} {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.data[key]
 }
 
-// GetString retrieves a string value from the context
-// Returns empty string if the key doesn't exist or value is not a string
+// GetString retrieves a string value from the context.
+// Returns empty string if the key doesn't exist or value is not a string.
 func (c *Context) GetString(key string) string {
 	val := c.Get(key)
 	if str, ok := val.(string); ok {
@@ -43,8 +62,8 @@ func (c *Context) GetString(key string) string {
 	return ""
 }
 
-// GetInt retrieves an int value from the context
-// Returns 0 if the key doesn't exist or value is not an int
+// GetInt retrieves an int value from the context.
+// Returns 0 if the key doesn't exist or value is not an int.
 func (c *Context) GetInt(key string) int {
 	val := c.Get(key)
 	if i, ok := val.(int); ok {
@@ -53,8 +72,8 @@ func (c *Context) GetInt(key string) int {
 	return 0
 }
 
-// GetInt64 retrieves an int64 value from the context
-// Returns 0 if the key doesn't exist or value is not an int64
+// GetInt64 retrieves an int64 value from the context.
+// Returns 0 if the key doesn't exist or value is not an int64.
 func (c *Context) GetInt64(key string) int64 {
 	val := c.Get(key)
 	if i, ok := val.(int64); ok {
@@ -63,8 +82,8 @@ func (c *Context) GetInt64(key string) int64 {
 	return 0
 }
 
-// GetBool retrieves a bool value from the context
-// Returns false if the key doesn't exist or value is not a bool
+// GetBool retrieves a bool value from the context.
+// Returns false if the key doesn't exist or value is not a bool.
 func (c *Context) GetBool(key string) bool {
 	val := c.Get(key)
 	if b, ok := val.(bool); ok {
@@ -73,7 +92,7 @@ func (c *Context) GetBool(key string) bool {
 	return false
 }
 
-// Has checks if a key exists in the context
+// Has checks if a key exists in the context's local data store.
 func (c *Context) Has(key string) bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -81,21 +100,21 @@ func (c *Context) Has(key string) bool {
 	return exists
 }
 
-// Delete removes a key from the context
+// Delete removes a key from the context's local data store.
 func (c *Context) Delete(key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	delete(c.data, key)
 }
 
-// Clear removes all data from the context
+// Clear removes all data from the context's local data store.
 func (c *Context) Clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.data = make(map[string]interface{})
 }
 
-// Keys returns all keys in the context
+// Keys returns all keys in the context's local data store.
 func (c *Context) Keys() []string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -106,18 +125,65 @@ func (c *Context) Keys() []string {
 	return keys
 }
 
-// GetStateData returns the user's state data as a map
-// Returns nil if no data exists
-func (c *Context) GetStateData() map[string]interface{} {
-	val := c.Get("data")
-	if data, ok := val.(map[string]interface{}); ok {
-		return data
-	}
-	return nil
+// Deadline returns the deadline of the parent context.
+// Implements context.Context.
+func (c *Context) Deadline() (deadline time.Time, ok bool) {
+	return c.Context.Deadline()
 }
 
-// GetStateName returns the user's current state name
-// Returns empty string if no state exists
+// Done returns the Done channel of the parent context.
+// Implements context.Context.
+func (c *Context) Done() <-chan struct{} {
+	return c.Context.Done()
+}
+
+// Err returns the error of the parent context.
+// Implements context.Context.
+func (c *Context) Err() error {
+	return c.Context.Err()
+}
+
+// Value looks up a key in the context chain. It first checks the local data
+// store (for string keys), then falls back to the parent context.
+// Implements context.Context.
+func (c *Context) Value(key any) any {
+	// First try the local data store (only for string keys)
+	if k, ok := key.(string); ok {
+		c.mu.RLock()
+		if val, exists := c.data[k]; exists {
+			c.mu.RUnlock()
+			return val
+		}
+		c.mu.RUnlock()
+	}
+	// Fall back to parent context
+	return c.Context.Value(key)
+}
+
+// SetParentContext replaces the parent context. This is useful when you need
+// to inject a different context (e.g., with a timeout or cancellation) after
+// the Context has been created.
+func (c *Context) SetParentContext(parent context.Context) {
+	c.Context = parent
+}
+
+// GetStateData is a convenience method that returns the user state name and
+// data map from the context, as injected by the framework during update processing.
+func (c *Context) GetStateData() (state string, data map[string]interface{}) {
+	state = c.GetString("state")
+	if d, ok := c.Get("data").(map[string]interface{}); ok {
+		data = d
+	}
+	return
+}
+
+// GetStateObj returns the state object from the context if present.
+func (c *Context) GetStateObj() interface{} {
+	return c.Get("state_obj")
+}
+
+// GetStateName returns the user's current state name.
+// Returns empty string if no state exists.
 func (c *Context) GetStateName() string {
 	return c.GetString("state")
 }
