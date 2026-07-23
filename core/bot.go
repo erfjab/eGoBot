@@ -47,7 +47,7 @@ func (b *Bot) SetProxy(proxyURL string) error {
 func (b *Bot) AddHandler(filter FilterFunc, handler HandlerFunc, opts ...interface{}) {
 	var stateFilter *state.Filter
 	var middlewares []MiddlewareFunc
-	
+
 	for _, opt := range opts {
 		switch v := opt.(type) {
 		case *state.Filter:
@@ -58,7 +58,7 @@ func (b *Bot) AddHandler(filter FilterFunc, handler HandlerFunc, opts ...interfa
 			middlewares = append(middlewares, v...)
 		}
 	}
-	
+
 	if stateFilter != nil {
 		b.handlers.AddHandlerWithState(filter, stateFilter, handler, middlewares...)
 	} else {
@@ -158,13 +158,13 @@ func (b *Bot) SetFallbackErrorHandler(handler ErrorHandlerFunc) {
 
 // PollingOptions represents configuration options for polling
 type PollingOptions struct {
-	Timeout        int           // Timeout in seconds for long polling (default: 30)
-	Limit          int           // Maximum number of updates to retrieve (default: 100)
-	AllowedUpdates []string      // List of update types to receive (default: all)
-	Async          bool          // Process updates asynchronously in goroutines (default: true)
-	RetryDelay     int           // Delay in seconds before retrying after error (default: 3)
-	OnStart        func()        // Callback when polling starts
-	OnError        func(error)   // Callback when error occurs
+	Timeout        int         // Timeout in seconds for long polling (default: 30)
+	Limit          int         // Maximum number of updates to retrieve (default: 100)
+	AllowedUpdates []string    // List of update types to receive (default: all)
+	Async          bool        // Process updates asynchronously in goroutines (default: true)
+	RetryDelay     int         // Delay in seconds before retrying after error (default: 3)
+	OnStart        func()      // Callback when polling starts
+	OnError        func(error) // Callback when error occurs
 }
 
 // StartPolling starts polling for updates
@@ -190,15 +190,15 @@ func (b *Bot) StartPolling(options *PollingOptions) {
 			options.RetryDelay = 3
 		}
 	}
-	
+
 	offset := int64(0)
-	
+
 	if options.OnStart != nil {
 		options.OnStart()
 	}
-	
+
 	log.Println("Bot started polling...")
-	
+
 	for {
 		updates, err := b.GetUpdates(&models.GetUpdatesParams{
 			Offset:         offset,
@@ -206,7 +206,7 @@ func (b *Bot) StartPolling(options *PollingOptions) {
 			Timeout:        options.Timeout,
 			AllowedUpdates: options.AllowedUpdates,
 		})
-		
+
 		if err != nil {
 			log.Printf("Error getting updates: %v", err)
 			if options.OnError != nil {
@@ -215,10 +215,10 @@ func (b *Bot) StartPolling(options *PollingOptions) {
 			time.Sleep(time.Duration(options.RetryDelay) * time.Second)
 			continue
 		}
-		
+
 		for _, update := range updates {
 			offset = update.UpdateID + 1
-			
+
 			if options.Async {
 				// Process update in a goroutine to handle multiple updates concurrently
 				go b.handlers.Process(b, &update)
@@ -702,4 +702,262 @@ func (b *Bot) HideGeneralForumTopic(params models.HideGeneralForumTopicParams) (
 
 func (b *Bot) UnhideGeneralForumTopic(params models.UnhideGeneralForumTopicParams) (bool, error) {
 	return b.requester.UnhideGeneralForumTopic(params)
+}
+
+// Live Photo Methods
+func (b *Bot) SendLivePhoto(params models.SendLivePhotoParams) (*models.Message, error) {
+	return b.requester.SendLivePhoto(params)
+}
+
+// Rich Message Methods
+func (b *Bot) SendRichMessage(params models.SendRichMessageParams) (*models.Message, error) {
+	return b.requester.SendRichMessage(params)
+}
+
+func (b *Bot) SendRichMessageDraft(params models.SendRichMessageDraftParams) (bool, error) {
+	return b.requester.SendRichMessageDraft(params)
+}
+
+// Ephemeral Message Methods
+func (b *Bot) EditEphemeralMessageText(params models.EditEphemeralMessageTextParams) (bool, error) {
+	return b.requester.EditEphemeralMessageText(params)
+}
+
+func (b *Bot) EditEphemeralMessageMedia(params models.EditEphemeralMessageMediaParams) (bool, error) {
+	return b.requester.EditEphemeralMessageMedia(params)
+}
+
+func (b *Bot) EditEphemeralMessageCaption(params models.EditEphemeralMessageCaptionParams) (bool, error) {
+	return b.requester.EditEphemeralMessageCaption(params)
+}
+
+func (b *Bot) EditEphemeralMessageReplyMarkup(params models.EditEphemeralMessageReplyMarkupParams) (bool, error) {
+	return b.requester.EditEphemeralMessageReplyMarkup(params)
+}
+
+func (b *Bot) DeleteEphemeralMessage(params models.DeleteEphemeralMessageParams) (bool, error) {
+	return b.requester.DeleteEphemeralMessage(params)
+}
+
+// Chat Management
+func (b *Bot) SetChatMemberTag(params models.SetChatMemberTagParams) (bool, error) {
+	return b.requester.SetChatMemberTag(params)
+}
+
+func (b *Bot) CreateChatSubscriptionInviteLink(params models.CreateChatSubscriptionInviteLinkParams) (*models.ChatInviteLink, error) {
+	return b.requester.CreateChatSubscriptionInviteLink(params)
+}
+
+func (b *Bot) EditChatSubscriptionInviteLink(params models.EditChatSubscriptionInviteLinkParams) (*models.ChatInviteLink, error) {
+	return b.requester.EditChatSubscriptionInviteLink(params)
+}
+
+func (b *Bot) GetUserChatBoosts(params models.GetUserChatBoostsParams) (*models.UserChatBoosts, error) {
+	return b.requester.GetUserChatBoosts(params)
+}
+
+func (b *Bot) DeleteMessageReaction(params models.DeleteMessageReactionParams) (bool, error) {
+	return b.requester.DeleteMessageReaction(params)
+}
+
+func (b *Bot) DeleteAllMessageReactions(params models.DeleteAllMessageReactionsParams) (bool, error) {
+	return b.requester.DeleteAllMessageReactions(params)
+}
+
+func (b *Bot) UnpinAllGeneralForumTopicMessages(params models.UnpinAllGeneralForumTopicMessagesParams) (bool, error) {
+	return b.requester.UnpinAllGeneralForumTopicMessages(params)
+}
+
+func (b *Bot) GetForumTopicIconStickers() ([]models.Sticker, error) {
+	return b.requester.GetForumTopicIconStickers()
+}
+
+// Bot Default Administrator Rights
+func (b *Bot) SetMyDefaultAdministratorRights(params models.SetMyDefaultAdministratorRightsParams) (bool, error) {
+	return b.requester.SetMyDefaultAdministratorRights(params)
+}
+
+func (b *Bot) GetMyDefaultAdministratorRights(params models.GetMyDefaultAdministratorRightsParams) (*models.ChatAdministratorRights, error) {
+	return b.requester.GetMyDefaultAdministratorRights(params)
+}
+
+// User Emoji Status
+func (b *Bot) SetUserEmojiStatus(params models.SetUserEmojiStatusParams) (bool, error) {
+	return b.requester.SetUserEmojiStatus(params)
+}
+
+// Business Connection
+func (b *Bot) GetBusinessConnection(businessConnectionID string) (*models.BusinessConnection, error) {
+	return b.requester.GetBusinessConnection(businessConnectionID)
+}
+
+// Managed Bot Methods
+func (b *Bot) GetManagedBotToken(userID int64) (string, error) {
+	return b.requester.GetManagedBotToken(userID)
+}
+
+func (b *Bot) ReplaceManagedBotToken(userID int64) (string, error) {
+	return b.requester.ReplaceManagedBotToken(userID)
+}
+
+func (b *Bot) GetManagedBotAccessSettings(userID int64) (*models.BotAccessSettings, error) {
+	return b.requester.GetManagedBotAccessSettings(userID)
+}
+
+func (b *Bot) SetManagedBotAccessSettings(isAccessRestricted bool, addedUserIDs []int64) (bool, error) {
+	return b.requester.SetManagedBotAccessSettings(isAccessRestricted, addedUserIDs)
+}
+
+// Gifts
+func (b *Bot) GetAvailableGifts() (*models.Gifts, error) {
+	return b.requester.GetAvailableGifts()
+}
+
+func (b *Bot) SendGift(params models.SendGiftParams) (bool, error) {
+	return b.requester.SendGift(params)
+}
+
+func (b *Bot) GiftPremiumSubscription(params models.GiftPremiumSubscriptionParams) (bool, error) {
+	return b.requester.GiftPremiumSubscription(params)
+}
+
+// Star Payments
+func (b *Bot) GetMyStarBalance() (*models.StarAmount, error) {
+	return b.requester.GetMyStarBalance()
+}
+
+func (b *Bot) GetStarTransactions(params models.GetStarTransactionsParams) (*models.StarTransactions, error) {
+	return b.requester.GetStarTransactions(params)
+}
+
+func (b *Bot) RefundStarPayment(params models.RefundStarPaymentParams) (bool, error) {
+	return b.requester.RefundStarPayment(params)
+}
+
+func (b *Bot) EditUserStarSubscription(params models.EditUserStarSubscriptionParams) (bool, error) {
+	return b.requester.EditUserStarSubscription(params)
+}
+
+// Verification
+func (b *Bot) VerifyUser(params models.VerifyUserParams) (bool, error) {
+	return b.requester.VerifyUser(params)
+}
+
+func (b *Bot) VerifyChat(params models.VerifyChatParams) (bool, error) {
+	return b.requester.VerifyChat(params)
+}
+
+func (b *Bot) RemoveUserVerification(userID int64) (bool, error) {
+	return b.requester.RemoveUserVerification(userID)
+}
+
+func (b *Bot) RemoveChatVerification(chatID interface{}) (bool, error) {
+	return b.requester.RemoveChatVerification(chatID)
+}
+
+// Personal Chat Messages
+func (b *Bot) GetUserPersonalChatMessages(params models.GetUserPersonalChatMessagesParams) ([]models.Message, error) {
+	return b.requester.GetUserPersonalChatMessages(params)
+}
+
+// Business Account Methods
+func (b *Bot) ReadBusinessMessage(params models.ReadBusinessMessageParams) (bool, error) {
+	return b.requester.ReadBusinessMessage(params)
+}
+
+func (b *Bot) DeleteBusinessMessages(params models.DeleteBusinessMessagesParams) (bool, error) {
+	return b.requester.DeleteBusinessMessages(params)
+}
+
+func (b *Bot) SetBusinessAccountName(params models.SetBusinessAccountNameParams) (bool, error) {
+	return b.requester.SetBusinessAccountName(params)
+}
+
+func (b *Bot) SetBusinessAccountUsername(params models.SetBusinessAccountUsernameParams) (bool, error) {
+	return b.requester.SetBusinessAccountUsername(params)
+}
+
+func (b *Bot) SetBusinessAccountBio(params models.SetBusinessAccountBioParams) (bool, error) {
+	return b.requester.SetBusinessAccountBio(params)
+}
+
+func (b *Bot) SetBusinessAccountProfilePhoto(params models.SetBusinessAccountProfilePhotoParams) (bool, error) {
+	return b.requester.SetBusinessAccountProfilePhoto(params)
+}
+
+func (b *Bot) RemoveBusinessAccountProfilePhoto(params models.RemoveBusinessAccountProfilePhotoParams) (bool, error) {
+	return b.requester.RemoveBusinessAccountProfilePhoto(params)
+}
+
+func (b *Bot) SetBusinessAccountGiftSettings(params models.SetBusinessAccountGiftSettingsParams) (bool, error) {
+	return b.requester.SetBusinessAccountGiftSettings(params)
+}
+
+func (b *Bot) GetBusinessAccountStarBalance(businessConnectionID string) (*models.StarAmount, error) {
+	return b.requester.GetBusinessAccountStarBalance(businessConnectionID)
+}
+
+func (b *Bot) TransferBusinessAccountStars(params models.TransferBusinessAccountStarsParams) (bool, error) {
+	return b.requester.TransferBusinessAccountStars(params)
+}
+
+// Gift Management
+func (b *Bot) ConvertGiftToStars(params models.ConvertGiftToStarsParams) (bool, error) {
+	return b.requester.ConvertGiftToStars(params)
+}
+
+func (b *Bot) UpgradeGift(params models.UpgradeGiftParams) (bool, error) {
+	return b.requester.UpgradeGift(params)
+}
+
+func (b *Bot) TransferGift(params models.TransferGiftParams) (bool, error) {
+	return b.requester.TransferGift(params)
+}
+
+// Story Methods
+func (b *Bot) PostStory(params models.PostStoryParams) (*models.Story, error) {
+	return b.requester.PostStory(params)
+}
+
+func (b *Bot) RepostStory(params models.RepostStoryParams) (*models.Story, error) {
+	return b.requester.RepostStory(params)
+}
+
+func (b *Bot) EditStory(params models.EditStoryParams) (*models.Story, error) {
+	return b.requester.EditStory(params)
+}
+
+func (b *Bot) DeleteStory(params models.DeleteStoryParams) (bool, error) {
+	return b.requester.DeleteStory(params)
+}
+
+// Suggested Post Methods
+func (b *Bot) ApproveSuggestedPost(params models.ApproveSuggestedPostParams) (bool, error) {
+	return b.requester.ApproveSuggestedPost(params)
+}
+
+func (b *Bot) DeclineSuggestedPost(params models.DeclineSuggestedPostParams) (bool, error) {
+	return b.requester.DeclineSuggestedPost(params)
+}
+
+// Guest and Join Request Queries
+func (b *Bot) AnswerGuestQuery(params models.AnswerGuestQueryParams) (*models.SentGuestMessage, error) {
+	return b.requester.AnswerGuestQuery(params)
+}
+
+func (b *Bot) AnswerChatJoinRequestQuery(params models.AnswerChatJoinRequestQueryParams) (bool, error) {
+	return b.requester.AnswerChatJoinRequestQuery(params)
+}
+
+func (b *Bot) SendChatJoinRequestWebApp(params models.SendChatJoinRequestWebAppParams) (bool, error) {
+	return b.requester.SendChatJoinRequestWebApp(params)
+}
+
+// Prepared Messages
+func (b *Bot) SavePreparedInlineMessage(params models.SavePreparedInlineMessageParams) (*models.PreparedInlineMessage, error) {
+	return b.requester.SavePreparedInlineMessage(params)
+}
+
+func (b *Bot) SavePreparedKeyboardButton(params models.SavePreparedKeyboardButtonParams) (*models.PreparedKeyboardButton, error) {
+	return b.requester.SavePreparedKeyboardButton(params)
 }

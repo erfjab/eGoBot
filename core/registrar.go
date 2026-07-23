@@ -185,3 +185,103 @@ func (r *RegisterCommands) OnInlineQuery(handler HandlerFunc, opts ...interface{
 func (r *RegisterCommands) OnChannelPost(handler HandlerFunc, opts ...interface{}) {
 	r.registrar.AddHandler(ChannelPostFilter(), handler, opts...)
 }
+
+// OnEditedChannelPost registers a handler for edited channel posts
+func (r *RegisterCommands) OnEditedChannelPost(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(EditedChannelPostFilter(), handler, opts...)
+}
+
+// OnBusinessConnection registers a handler for business connection updates
+func (r *RegisterCommands) OnBusinessConnection(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(BusinessConnectionFilter(), handler, opts...)
+}
+
+// OnBusinessMessage registers a handler for business messages
+func (r *RegisterCommands) OnBusinessMessage(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(BusinessMessageFilter(), handler, opts...)
+}
+
+// OnEditedBusinessMessage registers a handler for edited business messages
+func (r *RegisterCommands) OnEditedBusinessMessage(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(EditedBusinessMessageFilter(), handler, opts...)
+}
+
+// OnDeletedBusinessMessages registers a handler for deleted business messages
+func (r *RegisterCommands) OnDeletedBusinessMessages(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(DeletedBusinessMessagesFilter(), handler, opts...)
+}
+
+// OnGuestMessage registers a handler for guest messages
+func (r *RegisterCommands) OnGuestMessage(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(GuestMessageFilter(), handler, opts...)
+}
+
+// OnMessageReaction registers a handler for message reaction updates
+func (r *RegisterCommands) OnMessageReaction(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(MessageReactionFilter(), handler, opts...)
+}
+
+// OnMessageReactionCount registers a handler for message reaction count updates
+func (r *RegisterCommands) OnMessageReactionCount(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(MessageReactionCountFilter(), handler, opts...)
+}
+
+// OnShippingQuery registers a handler for shipping queries
+func (r *RegisterCommands) OnShippingQuery(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(ShippingQueryFilter(), handler, opts...)
+}
+
+// OnPreCheckoutQuery registers a handler for pre-checkout queries
+func (r *RegisterCommands) OnPreCheckoutQuery(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(PreCheckoutQueryFilter(), handler, opts...)
+}
+
+// OnPurchasedPaidMedia registers a handler for purchased paid media updates
+func (r *RegisterCommands) OnPurchasedPaidMedia(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(PurchasedPaidMediaFilter(), handler, opts...)
+}
+
+// OnPoll registers a handler for poll updates
+func (r *RegisterCommands) OnPoll(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(PollFilter(), handler, opts...)
+}
+
+// OnPollAnswer registers a handler for poll answer updates
+func (r *RegisterCommands) OnPollAnswer(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(PollAnswerFilter(), handler, opts...)
+}
+
+// OnMyChatMember registers a handler for my chat member updates
+func (r *RegisterCommands) OnMyChatMember(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(MyChatMemberFilter(), handler, opts...)
+}
+
+// OnChatMember registers a handler for chat member updates
+func (r *RegisterCommands) OnChatMember(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(ChatMemberFilter(), handler, opts...)
+}
+
+// OnChatJoinRequest registers a handler for chat join request updates
+func (r *RegisterCommands) OnChatJoinRequest(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(ChatJoinRequestFilter(), handler, opts...)
+}
+
+// OnChatBoost registers a handler for chat boost updates
+func (r *RegisterCommands) OnChatBoost(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(ChatBoostFilter(), handler, opts...)
+}
+
+// OnRemovedChatBoost registers a handler for removed chat boost updates
+func (r *RegisterCommands) OnRemovedChatBoost(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(RemovedChatBoostFilter(), handler, opts...)
+}
+
+// OnManagedBot registers a handler for managed bot updates
+func (r *RegisterCommands) OnManagedBot(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(ManagedBotFilter(), handler, opts...)
+}
+
+// OnSubscription registers a handler for subscription updates
+func (r *RegisterCommands) OnSubscription(handler HandlerFunc, opts ...interface{}) {
+	r.registrar.AddHandler(SubscriptionFilter(), handler, opts...)
+}

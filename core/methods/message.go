@@ -642,3 +642,135 @@ func (r *Requester) DeleteMessages(params models.DeleteMessagesParams) (bool, er
 
 	return result, nil
 }
+
+// https://core.telegram.org/bots/api#sendlivephoto
+func (r *Requester) SendLivePhoto(params models.SendLivePhotoParams) (*models.Message, error) {
+	if params.LivePhoto == nil || params.Photo == nil {
+		return nil, errors.New("live_photo and photo are required")
+	}
+
+	respBody, err := r.Request("sendLivePhoto", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var result models.Message
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+// https://core.telegram.org/bots/api#sendrichmessage
+func (r *Requester) SendRichMessage(params models.SendRichMessageParams) (*models.Message, error) {
+	respBody, err := r.Request("sendRichMessage", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var result models.Message
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+}
+
+// https://core.telegram.org/bots/api#sendrichmessagedraft
+func (r *Requester) SendRichMessageDraft(params models.SendRichMessageDraftParams) (bool, error) {
+	respBody, err := r.Request("sendRichMessageDraft", params)
+	if err != nil {
+		return false, err
+	}
+
+	var result bool
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return false, err
+	}
+
+	return result, nil
+}
+
+// https://core.telegram.org/bots/api#editephemeralmessagetext
+func (r *Requester) EditEphemeralMessageText(params models.EditEphemeralMessageTextParams) (bool, error) {
+	if params.Text == "" {
+		return false, errors.New("text is required")
+	}
+
+	respBody, err := r.Request("editEphemeralMessageText", params)
+	if err != nil {
+		return false, err
+	}
+
+	var result bool
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return false, err
+	}
+
+	return result, nil
+}
+
+// https://core.telegram.org/bots/api#editephemeralmessagemedia
+func (r *Requester) EditEphemeralMessageMedia(params models.EditEphemeralMessageMediaParams) (bool, error) {
+	if params.Media == nil {
+		return false, errors.New("media is required")
+	}
+
+	respBody, err := r.Request("editEphemeralMessageMedia", params)
+	if err != nil {
+		return false, err
+	}
+
+	var result bool
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return false, err
+	}
+
+	return result, nil
+}
+
+// https://core.telegram.org/bots/api#editephemeralmessagecaption
+func (r *Requester) EditEphemeralMessageCaption(params models.EditEphemeralMessageCaptionParams) (bool, error) {
+	respBody, err := r.Request("editEphemeralMessageCaption", params)
+	if err != nil {
+		return false, err
+	}
+
+	var result bool
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return false, err
+	}
+
+	return result, nil
+}
+
+// https://core.telegram.org/bots/api#editephemeralmessagereplymarkup
+func (r *Requester) EditEphemeralMessageReplyMarkup(params models.EditEphemeralMessageReplyMarkupParams) (bool, error) {
+	respBody, err := r.Request("editEphemeralMessageReplyMarkup", params)
+	if err != nil {
+		return false, err
+	}
+
+	var result bool
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return false, err
+	}
+
+	return result, nil
+}
+
+// https://core.telegram.org/bots/api#deleteephemeralmessage
+func (r *Requester) DeleteEphemeralMessage(params models.DeleteEphemeralMessageParams) (bool, error) {
+	respBody, err := r.Request("deleteEphemeralMessage", params)
+	if err != nil {
+		return false, err
+	}
+
+	var result bool
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return false, err
+	}
+
+	return result, nil
+}
