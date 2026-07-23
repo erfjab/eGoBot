@@ -696,3 +696,123 @@ func (r *Requester) GetUserProfileAudios(params *models.GetUserProfileAudiosPara
 	err = r.ParseResponse(respBody, &result)
 	return &result, err
 }
+
+// https://core.telegram.org/bots/api#setchatmembertag
+func (r *Requester) SetChatMemberTag(params models.SetChatMemberTagParams) (bool, error) {
+	respBody, err := r.Request("setChatMemberTag", params)
+	if err != nil {
+		return false, err
+	}
+
+	var result bool
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return false, err
+	}
+	return result, nil
+}
+
+// https://core.telegram.org/bots/api#createchatsubscriptioninvitelink
+func (r *Requester) CreateChatSubscriptionInviteLink(params models.CreateChatSubscriptionInviteLinkParams) (*models.ChatInviteLink, error) {
+	if params.SubscriptionPeriod <= 0 || params.SubscriptionPrice <= 0 {
+		return nil, fmt.Errorf("subscription_period and subscription_price are required")
+	}
+
+	respBody, err := r.Request("createChatSubscriptionInviteLink", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var result models.ChatInviteLink
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// https://core.telegram.org/bots/api#editchatsubscriptioninvitelink
+func (r *Requester) EditChatSubscriptionInviteLink(params models.EditChatSubscriptionInviteLinkParams) (*models.ChatInviteLink, error) {
+	if params.InviteLink == "" {
+		return nil, fmt.Errorf("invite_link cannot be empty")
+	}
+
+	respBody, err := r.Request("editChatSubscriptionInviteLink", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var result models.ChatInviteLink
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// https://core.telegram.org/bots/api#getuserchatboosts
+func (r *Requester) GetUserChatBoosts(params models.GetUserChatBoostsParams) (*models.UserChatBoosts, error) {
+	respBody, err := r.Request("getUserChatBoosts", params)
+	if err != nil {
+		return nil, err
+	}
+
+	var result models.UserChatBoosts
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}
+
+// https://core.telegram.org/bots/api#deleteallmessagereactions
+func (r *Requester) DeleteAllMessageReactions(params models.DeleteAllMessageReactionsParams) (bool, error) {
+	respBody, err := r.Request("deleteAllMessageReactions", params)
+	if err != nil {
+		return false, err
+	}
+
+	var result bool
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return false, err
+	}
+	return result, nil
+}
+
+// https://core.telegram.org/bots/api#deletemessagereaction
+func (r *Requester) DeleteMessageReaction(params models.DeleteMessageReactionParams) (bool, error) {
+	respBody, err := r.Request("deleteMessageReaction", params)
+	if err != nil {
+		return false, err
+	}
+
+	var result bool
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return false, err
+	}
+	return result, nil
+}
+
+// https://core.telegram.org/bots/api#unpinallgeneralforumtopicmessages
+func (r *Requester) UnpinAllGeneralForumTopicMessages(params models.UnpinAllGeneralForumTopicMessagesParams) (bool, error) {
+	respBody, err := r.Request("unpinAllGeneralForumTopicMessages", params)
+	if err != nil {
+		return false, err
+	}
+
+	var result bool
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return false, err
+	}
+	return result, nil
+}
+
+// https://core.telegram.org/bots/api#getforumtopiciconstickers
+func (r *Requester) GetForumTopicIconStickers() ([]models.Sticker, error) {
+	respBody, err := r.Request("getForumTopicIconStickers", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []models.Sticker
+	if err := r.ParseResponse(respBody, &result); err != nil {
+		return nil, err
+	}
+	return result, nil
+}

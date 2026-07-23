@@ -68,6 +68,34 @@ func (h *Handlers) Process(bot *Bot, update *models.Update) {
 		userID = update.EditedMessage.From.ID
 	} else if update.InlineQuery != nil {
 		userID = update.InlineQuery.From.ID
+	} else if update.BusinessMessage != nil && update.BusinessMessage.From != nil {
+		userID = update.BusinessMessage.From.ID
+	} else if update.EditedBusinessMessage != nil && update.EditedBusinessMessage.From != nil {
+		userID = update.EditedBusinessMessage.From.ID
+	} else if update.GuestMessage != nil && update.GuestMessage.From != nil {
+		userID = update.GuestMessage.From.ID
+	} else if update.ChannelPost != nil && update.ChannelPost.From != nil {
+		userID = update.ChannelPost.From.ID
+	} else if update.EditedChannelPost != nil && update.EditedChannelPost.From != nil {
+		userID = update.EditedChannelPost.From.ID
+	} else if update.ShippingQuery != nil {
+		userID = update.ShippingQuery.From.ID
+	} else if update.PreCheckoutQuery != nil {
+		userID = update.PreCheckoutQuery.From.ID
+	} else if update.PurchasedPaidMedia != nil {
+		userID = update.PurchasedPaidMedia.From.ID
+	} else if update.MyChatMember != nil {
+		userID = update.MyChatMember.From.ID
+	} else if update.ChatMember != nil {
+		userID = update.ChatMember.From.ID
+	} else if update.ChatJoinRequest != nil {
+		userID = update.ChatJoinRequest.From.ID
+	} else if update.BusinessConnection != nil {
+		userID = update.BusinessConnection.User.ID
+	} else if update.PollAnswer != nil && update.PollAnswer.User != nil {
+		userID = update.PollAnswer.User.ID
+	} else if update.Subscription != nil {
+		userID = update.Subscription.User.ID
 	}
 
 	for _, handler := range h.handlers {
@@ -83,7 +111,7 @@ func (h *Handlers) Process(bot *Bot, update *models.Update) {
 					log.Printf("Error getting user context: %v", err)
 					continue
 				}
-				
+
 				// Check if state matches
 				var currentState *state.State
 				if userContext != nil && userContext.State != "" {
@@ -105,7 +133,7 @@ func (h *Handlers) Process(bot *Bot, update *models.Update) {
 					handlerCtx.Set("state_obj", state.NewState(userContext.State))
 				}
 			}
-			
+
 			// Execute with middleware chain
 			if len(handler.Middlewares) > 0 {
 				chain := NewMiddlewareChainWithContext(handler.Handler, handlerCtx, handler.Middlewares...)
@@ -114,7 +142,7 @@ func (h *Handlers) Process(bot *Bot, update *models.Update) {
 				// No middlewares, execute handler directly
 				err = handler.Handler(bot, update, handlerCtx)
 			}
-			
+
 			// If there was an error, pass it to error handlers
 			if err != nil {
 				log.Printf("Error handling update: %v", err)
@@ -257,13 +285,6 @@ func ContactFilter() FilterFunc {
 	}
 }
 
-// EditedMessageFilter filters edited messages
-func EditedMessageFilter() FilterFunc {
-	return func(update *models.Update) bool {
-		return update.EditedMessage != nil
-	}
-}
-
 // InlineQueryFilter filters inline queries
 func InlineQueryFilter() FilterFunc {
 	return func(update *models.Update) bool {
@@ -285,6 +306,13 @@ func EditedChannelPostFilter() FilterFunc {
 	}
 }
 
+// EditedMessageFilter filters edited messages
+func EditedMessageFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.EditedMessage != nil
+	}
+}
+
 // ChatTypeFilter filters messages by chat type (private, group, supergroup, channel)
 func ChatTypeFilter(chatType models.ChatType) FilterFunc {
 	return func(update *models.Update) bool {
@@ -300,7 +328,7 @@ func ChatTypeFilter(chatType models.ChatType) FilterFunc {
 		} else if update.CallbackQuery != nil && update.CallbackQuery.Message != nil {
 			chat = &update.CallbackQuery.Message.Chat
 		}
-		
+
 		if chat == nil {
 			return false
 		}
@@ -356,5 +384,145 @@ func OrFilter(filters ...FilterFunc) FilterFunc {
 func NotFilter(filter FilterFunc) FilterFunc {
 	return func(update *models.Update) bool {
 		return !filter(update)
+	}
+}
+
+// BusinessConnectionFilter filters business connection updates
+func BusinessConnectionFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.BusinessConnection != nil
+	}
+}
+
+// BusinessMessageFilter filters business messages
+func BusinessMessageFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.BusinessMessage != nil
+	}
+}
+
+// EditedBusinessMessageFilter filters edited business messages
+func EditedBusinessMessageFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.EditedBusinessMessage != nil
+	}
+}
+
+// DeletedBusinessMessagesFilter filters deleted business messages
+func DeletedBusinessMessagesFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.DeletedBusinessMessages != nil
+	}
+}
+
+// GuestMessageFilter filters guest messages
+func GuestMessageFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.GuestMessage != nil
+	}
+}
+
+// MessageReactionFilter filters message reaction updates
+func MessageReactionFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.MessageReaction != nil
+	}
+}
+
+// MessageReactionCountFilter filters message reaction count updates
+func MessageReactionCountFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.MessageReactionCount != nil
+	}
+}
+
+// ShippingQueryFilter filters shipping query updates
+func ShippingQueryFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.ShippingQuery != nil
+	}
+}
+
+// PreCheckoutQueryFilter filters pre-checkout query updates
+func PreCheckoutQueryFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.PreCheckoutQuery != nil
+	}
+}
+
+// PurchasedPaidMediaFilter filters purchased paid media updates
+func PurchasedPaidMediaFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.PurchasedPaidMedia != nil
+	}
+}
+
+// PollFilter filters poll updates
+func PollFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.Poll != nil
+	}
+}
+
+// PollAnswerFilter filters poll answer updates
+func PollAnswerFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.PollAnswer != nil
+	}
+}
+
+// MyChatMemberFilter filters my chat member updates
+func MyChatMemberFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.MyChatMember != nil
+	}
+}
+
+// ChatMemberFilter filters chat member updates
+func ChatMemberFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.ChatMember != nil
+	}
+}
+
+// ChatJoinRequestFilter filters chat join request updates
+func ChatJoinRequestFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.ChatJoinRequest != nil
+	}
+}
+
+// ChatBoostFilter filters chat boost updates
+func ChatBoostFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.ChatBoost != nil
+	}
+}
+
+// RemovedChatBoostFilter filters removed chat boost updates
+func RemovedChatBoostFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.RemovedChatBoost != nil
+	}
+}
+
+// ManagedBotFilter filters managed bot updates
+func ManagedBotFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.ManagedBot != nil
+	}
+}
+
+// SubscriptionFilter filters subscription updates
+func SubscriptionFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update.Subscription != nil
+	}
+}
+
+// AnyFilter matches any update
+func AnyFilter() FilterFunc {
+	return func(update *models.Update) bool {
+		return update != nil
 	}
 }

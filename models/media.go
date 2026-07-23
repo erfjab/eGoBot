@@ -48,26 +48,18 @@ type Document struct {
 
 // https://core.telegram.org/bots/api#video
 type Video struct {
-	FileID       string          `json:"file_id"`
-	FileUniqueID string          `json:"file_unique_id"`
-	Width        int             `json:"width"`
-	Height       int             `json:"height"`
-	Duration     int             `json:"duration"`
-	Thumbnail    *PhotoSize      `json:"thumbnail,omitempty"`
-	FileName     string          `json:"file_name,omitempty"`
-	MimeType     string          `json:"mime_type,omitempty"`
-	FileSize     int64           `json:"file_size,omitempty"`
-	Qualities    []VideoQuality  `json:"qualities,omitempty"`
-}
-
-// https://core.telegram.org/bots/api#videoquality
-type VideoQuality struct {
-	FileID       string     `json:"file_id"`
-	FileUniqueID string     `json:"file_unique_id"`
-	Width        int        `json:"width"`
-	Height       int        `json:"height"`
-	FileSize     int64      `json:"file_size,omitempty"`
-	Thumbnail    *PhotoSize `json:"thumbnail,omitempty"`
+	FileID         string         `json:"file_id"`
+	FileUniqueID   string         `json:"file_unique_id"`
+	Width          int            `json:"width"`
+	Height         int            `json:"height"`
+	Duration       int            `json:"duration"`
+	Thumbnail      *PhotoSize     `json:"thumbnail,omitempty"`
+	Cover          []PhotoSize    `json:"cover,omitempty"`
+	StartTimestamp int            `json:"start_timestamp,omitempty"`
+	Qualities      []VideoQuality `json:"qualities,omitempty"`
+	FileName       string         `json:"file_name,omitempty"`
+	MimeType       string         `json:"mime_type,omitempty"`
+	FileSize       int64          `json:"file_size,omitempty"`
 }
 
 // https://core.telegram.org/bots/api#audio
@@ -183,4 +175,115 @@ type Venue struct {
 type Dice struct {
 	Emoji string `json:"emoji"`
 	Value int    `json:"value"`
+}
+
+// https://core.telegram.org/bots/api#inputmedialink
+type InputMediaLink struct {
+	Type string `json:"type"`
+	URL  string `json:"url"`
+}
+
+// https://core.telegram.org/bots/api#inputmedialivephoto
+type InputMediaLivePhoto struct {
+	Type                  string          `json:"type"`
+	Media                 string          `json:"media"`
+	Photo                 string          `json:"photo"`
+	Caption               string          `json:"caption,omitempty"`
+	ParseMode             string          `json:"parse_mode,omitempty"`
+	CaptionEntities       []MessageEntity `json:"caption_entities,omitempty"`
+	ShowCaptionAboveMedia bool            `json:"show_caption_above_media,omitempty"`
+	HasSpoiler            bool            `json:"has_spoiler,omitempty"`
+}
+
+// https://core.telegram.org/bots/api#inputmedialocation
+type InputMediaLocation struct {
+	Type               string  `json:"type"`
+	Latitude           float64 `json:"latitude"`
+	Longitude          float64 `json:"longitude"`
+	HorizontalAccuracy float64 `json:"horizontal_accuracy,omitempty"`
+}
+
+// https://core.telegram.org/bots/api#inputmediasticker
+type InputMediaSticker struct {
+	Type  string `json:"type"`
+	Media string `json:"media"`
+	Emoji string `json:"emoji,omitempty"`
+}
+
+// https://core.telegram.org/bots/api#inputmediavenue
+type InputMediaVenue struct {
+	Type            string  `json:"type"`
+	Latitude        float64 `json:"latitude"`
+	Longitude       float64 `json:"longitude"`
+	Title           string  `json:"title"`
+	Address         string  `json:"address"`
+	FoursquareID    string  `json:"foursquare_id,omitempty"`
+	FoursquareType  string  `json:"foursquare_type,omitempty"`
+	GooglePlaceID   string  `json:"google_place_id,omitempty"`
+	GooglePlaceType string  `json:"google_place_type,omitempty"`
+}
+
+// https://core.telegram.org/bots/api#inputmediavoicenote
+type InputMediaVoiceNote struct {
+	Type            string          `json:"type"`
+	Media           string          `json:"media"`
+	Caption         string          `json:"caption,omitempty"`
+	ParseMode       string          `json:"parse_mode,omitempty"`
+	CaptionEntities []MessageEntity `json:"caption_entities,omitempty"`
+	Duration        int             `json:"duration,omitempty"`
+}
+
+// https://core.telegram.org/bots/api#inputpaidmedialivephoto
+type InputPaidMediaLivePhoto struct {
+	Type  string `json:"type"`
+	Media string `json:"media"`
+	Photo string `json:"photo"`
+}
+
+// https://core.telegram.org/bots/api#paidmedialivephoto
+type PaidMediaLivePhoto struct {
+	Type      string    `json:"type"`
+	LivePhoto LivePhoto `json:"live_photo"`
+}
+
+// https://core.telegram.org/bots/api#paidmediaphoto
+type PaidMediaPhoto struct {
+	Type  string      `json:"type"`
+	Photo []PhotoSize `json:"photo"`
+}
+
+// https://core.telegram.org/bots/api#paidmediapreview
+type PaidMediaPreview struct {
+	Type     string `json:"type"`
+	Width    int    `json:"width,omitempty"`
+	Height   int    `json:"height,omitempty"`
+	Duration int    `json:"duration,omitempty"`
+}
+
+// https://core.telegram.org/bots/api#paidmediavideo
+type PaidMediaVideo struct {
+	Type  string `json:"type"`
+	Video Video  `json:"video"`
+}
+
+// https://core.telegram.org/bots/api#inputstorycontentphoto
+type InputStoryContentPhoto struct {
+	Type  string `json:"type"`
+	Photo string `json:"photo"`
+}
+
+// https://core.telegram.org/bots/api#inputstorycontentvideo
+type InputStoryContentVideo struct {
+	Type                string  `json:"type"`
+	Video               string  `json:"video"`
+	Duration            float64 `json:"duration,omitempty"`
+	CoverFrameTimestamp float64 `json:"cover_frame_timestamp,omitempty"`
+	IsAnimation         bool    `json:"is_animation,omitempty"`
+}
+
+// https://core.telegram.org/bots/api#inputprofilephotoanimated
+type InputProfilePhotoAnimated struct {
+	Type               string  `json:"type"`
+	Animation          string  `json:"animation"`
+	MainFrameTimestamp float64 `json:"main_frame_timestamp,omitempty"`
 }
