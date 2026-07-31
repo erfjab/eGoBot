@@ -20,7 +20,10 @@ import (
 )
 
 const (
-	baseURL        = "https://api.telegram.org/bot"
+	// defaultBaseURL is the official Telegram Bot API endpoint. Tokens are
+	// appended directly after it (no separator), e.g.
+	// https://api.telegram.org/bot<TOKEN>/<method>
+	defaultBaseURL = "https://api.telegram.org/bot"
 	defaultTimeout = 30 * time.Second
 )
 
@@ -30,15 +33,25 @@ var inputFileType = reflect.TypeOf(models.InputFile{})
 type Requester struct {
 	Token      string
 	HTTPClient *http.Client
+	baseURL    string
 }
 
 func NewRequester(token string) *Requester {
 	return &Requester{
-		Token: token,
+		Token:   token,
+		baseURL: defaultBaseURL,
 		HTTPClient: &http.Client{
 			Timeout: defaultTimeout,
 		},
 	}
+}
+
+// SetAPIURL overrides the Telegram Bot API base URL.
+// Point it at a local Bot API server (e.g. "http://localhost:8081/bot") to
+// lift the official 20MB download / 50MB upload file-size limits.
+// The URL must end with "bot"; any trailing slashes are stripped.
+func (r *Requester) SetAPIURL(apiURL string) {
+	r.baseURL = strings.TrimRight(apiURL, "/")
 }
 
 // SetProxy configures the HTTP client to route all requests through the given proxy URL.
@@ -98,7 +111,7 @@ func (r *Requester) Request(method string, params interface{}) ([]byte, error) {
 
 // requestJSON encodes params as JSON and POSTs it to the Telegram API.
 func (r *Requester) requestJSON(method string, params interface{}) ([]byte, error) {
-	url := fmt.Sprintf("%s%s/%s", baseURL, r.Token, method)
+	url := fmt.Sprintf("%s%s/%s", r.baseURL, r.Token, method)
 
 	var body []byte
 	var err error
@@ -123,7 +136,7 @@ func (r *Requester) requestJSON(method string, params interface{}) ([]byte, erro
 // Fields that are InputFile with Data are written as file parts; everything
 // else is written as plain form fields (complex types are JSON-encoded).
 func (r *Requester) requestMultipart(method string, params interface{}) ([]byte, error) {
-	url := fmt.Sprintf("%s%s/%s", baseURL, r.Token, method)
+	url := fmt.Sprintf("%s%s/%s", r.baseURL, r.Token, method)
 
 	buf := &bytes.Buffer{}
 	w := multipart.NewWriter(buf)

@@ -43,6 +43,13 @@ func (b *Bot) SetProxy(proxyURL string) error {
 	return b.requester.SetProxy(proxyURL)
 }
 
+// SetAPIURL overrides the Telegram Bot API base URL.
+// Point it at a local Bot API server (e.g. "http://localhost:8081/bot") to
+// lift the official 20MB download / 50MB upload file-size limits.
+func (b *Bot) SetAPIURL(apiURL string) {
+	b.requester.SetAPIURL(apiURL)
+}
+
 // AddHandler adds a custom handler with a filter and optional state filter
 func (b *Bot) AddHandler(filter FilterFunc, handler HandlerFunc, opts ...interface{}) {
 	var stateFilter *state.Filter
